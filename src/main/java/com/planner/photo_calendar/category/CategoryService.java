@@ -1,7 +1,9 @@
 package com.planner.photo_calendar.category;
 
+import com.planner.photo_calendar.category.dto.AnnualRecordStatus;
 import com.planner.photo_calendar.category.dto.request.CategoryCreateRequest;
 import com.planner.photo_calendar.category.dto.request.CategoryReorderRequest;
+import com.planner.photo_calendar.category.dto.response.AnnualRecordResponse;
 import com.planner.photo_calendar.category.dto.response.CategoryResponse;
 import com.planner.photo_calendar.category.dto.request.CategoryUpdateRequest;
 import com.planner.photo_calendar.completionhistory.CompletionHistory;
@@ -13,8 +15,12 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.YearMonth;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -109,5 +115,73 @@ public class CategoryService {
         recordRepository.deleteAll(records);
 
         category.delete();
+    }
+
+    @Transactional(readOnly = true)
+    public List<AnnualRecordResponse> getAnnualRecords(
+            Long categoryId,
+            int year
+    ) {
+        Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
+                .orElseThrow(() ->
+                        new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+
+        LocalDate startDate = LocalDate.of(year, 1, 1);
+        LocalDate endDate = LocalDate.of(year, 12, 31);
+
+        List<DailyRecord> records = recordRepository.findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
+                categoryId,
+                startDate,
+                endDate
+        );
+
+        Set<LocalDate> recordedDates = records.stream()
+                .map(DailyRecord::getRecordDate)
+                .collect(Collectors.toSet());
+
+        LocalDate createDate = category.getCreatedAt().toLocalDate();
+        LocalDate today = LocalDate.now();
+
+        ArrayList<AnnualRecordResponse> response = new ArrayList<>();
+
+        for (int month = 1; month <= 12; month++) {
+            YearMonth yearMonth = YearMonth.of(year, month);
+
+            for (int day = 1; day <= 31; day++) {
+
+                if(!yearMonth.isValidDay(day)) {
+                    response.add(
+                            new AnnualRecordResponse(
+                                    month,
+                                    day,
+                                    AnnualRecordStatus.NO_DATE
+                            )
+                    );
+                    continue;
+                }
+                LocalDate date = yearMonth.atDay(day);
+
+                AnnualRecordStatus status;
+
+                if(date.isBefore(createDate)) {
+                    status = AnnualRecordStatus.NO_DATE;
+                } else if(date.isAfter(today)){
+                    status = AnnualRecordStatus.FUTURE;
+                } else if(recordedDates.contains(date)){
+                    status = AnnualRecordStatus.RECORDED;
+                } else {
+                    status = AnnualRecordStatus.MISSED;
+                }
+
+                response.add(
+                        new AnnualRecordResponse(
+                                month,
+                                day,
+                                status
+                        )
+                );
+            }
+        }
+        return response;
     }
 }

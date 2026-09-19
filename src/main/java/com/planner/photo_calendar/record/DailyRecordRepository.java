@@ -20,4 +20,6 @@ public interface DailyRecordRepository extends JpaRepository<DailyRecord, Long> 
     List<DailyRecord> findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
             Long id, LocalDate start, LocalDate end
     );
+
+    long countByRecordDate(LocalDate date);
 }

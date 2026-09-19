@@ -37,8 +37,8 @@ public class DailyRecord {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String memo;
 
-    @Column(name = "image_url", length = 500)
-    private String imageUrl;
+    @Column(name = "image_key", length = 500)
+    private String imageKey;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
@@ -49,12 +49,12 @@ public class DailyRecord {
     protected DailyRecord() {
     }
 
-    public DailyRecord(Category category, LocalDate recordDate, LocalTime recordTime, String memo, String imageUrl) {
+    public DailyRecord(Category category, LocalDate recordDate, LocalTime recordTime, String memo, String imageKey) {
         this.category = category;
         this.recordDate = recordDate;
         this.recordTime = recordTime;
         this.memo = memo;
-        this.imageUrl = imageUrl;
+        this.imageKey = imageKey;
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
     }

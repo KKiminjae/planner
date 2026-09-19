@@ -26,6 +26,19 @@ public class DailyRecordService {
                 .orElseThrow(() ->
                         new IllegalArgumentException("존재하지 않는 카테고리 입니다."));
 
+        LocalDate createdDate = category.getCreatedAt().toLocalDate();
+
+        if(request.recordDate().isBefore(createdDate)){
+            throw new IllegalArgumentException(
+                    "카테고리 생성일 이전에는 기록할 수 없습니다."
+            );
+        }
+        if(request.recordDate().isAfter(LocalDate.now())){
+            throw new IllegalArgumentException(
+                    "미래 날짜에는 기록할 수 없습니다."
+            );
+        }
+
         boolean exists = recordRepository.existsByCategoryIdAndRecordDate(category.getId(), request.recordDate());
 
         if(exists){

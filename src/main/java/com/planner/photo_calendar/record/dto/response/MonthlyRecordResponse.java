@@ -9,14 +9,14 @@ public record MonthlyRecordResponse(
         Long id,
         LocalDate recordDate,
         LocalTime recordTime,
-        String imageUrl
+        String imageKey
 ) {
     public static MonthlyRecordResponse from(DailyRecord dailyRecord){
         return new MonthlyRecordResponse(
                 dailyRecord.getId(),
                 dailyRecord.getRecordDate(),
                 dailyRecord.getRecordTime(),
-                dailyRecord.getImageUrl()
+                dailyRecord.getImageKey()
         );
     }
 }

@@ -23,7 +23,7 @@ public record DailyRecordResponse (
                 record.getRecordDate(),
                 record.getRecordTime(),
                 record.getMemo(),
-                record.getImageUrl()
+                record.getImageKey()
         );
     }
 }

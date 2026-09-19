@@ -2,6 +2,7 @@ package com.planner.photo_calendar.category;
 
 import com.planner.photo_calendar.category.dto.request.CategoryCreateRequest;
 import com.planner.photo_calendar.category.dto.request.CategoryReorderRequest;
+import com.planner.photo_calendar.category.dto.response.AnnualRecordResponse;
 import com.planner.photo_calendar.category.dto.response.CategoryResponse;
 import com.planner.photo_calendar.category.dto.request.CategoryUpdateRequest;
 import com.planner.photo_calendar.record.DailyRecordRepository;
@@ -42,6 +43,14 @@ public class CategoryController {
             @RequestParam int month
     ) {
         return dailyRecordService.getMonthlyRecords(id, year, month);
+    }
+
+    @GetMapping("/{id}/annual")
+    public List<AnnualRecordResponse> getAnnualRecords(
+            @PathVariable Long id,
+            @RequestParam int year
+    ) {
+        return categoryService.getAnnualRecords(id, year);
     }
 
     @PatchMapping("/{id}")
