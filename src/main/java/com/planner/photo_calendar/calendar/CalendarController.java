@@ -8,6 +8,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 @RestController
 @RequestMapping("/api/calendar")
@@ -18,8 +20,8 @@ public class CalendarController {
 
     @GetMapping("/integrated")
     public List<IntegratedCalendarResponse> getIntegratedCalendar(
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam @Min(1) @Max(9999) int year,
+            @RequestParam @Min(1) @Max(12) int month
     ) {
         return calendarService.getIntegratedCalender(year, month);
     }

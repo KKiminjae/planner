@@ -5,6 +5,8 @@ import com.planner.photo_calendar.category.CategoryRepository;
 import com.planner.photo_calendar.support.MySqlIntegrationTest;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
+import com.planner.photo_calendar.common.exception.GlobalExceptionHandler;
+import com.planner.photo_calendar.common.exception.ErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -26,7 +28,11 @@ class DailyRecordRepositoryTest extends MySqlIntegrationTest {
         save(category, date, 9);
         entityManager.clear();
         assertThatThrownBy(() -> save(category, date, 18))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOfSatisfying(DataIntegrityViolationException.class, exception -> {
+                    var response = new GlobalExceptionHandler().handleIntegrity(exception);
+                    assertThat(response.getStatusCode().value()).isEqualTo(409);
+                    assertThat(((ErrorResponse) response.getBody()).code()).isEqualTo("DUPLICATE_DAILY_RECORD");
+                });
     }
 
     @Test

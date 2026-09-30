@@ -7,6 +7,7 @@ import com.planner.photo_calendar.record.dto.request.DailyRecordUpdateRequest;
 import com.planner.photo_calendar.record.dto.response.DailyRecordResponse;
 import com.planner.photo_calendar.record.dto.response.MonthlyRecordResponse;
 import org.junit.jupiter.api.Test;
+import com.planner.photo_calendar.common.exception.BusinessException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -61,8 +62,8 @@ class DailyRecordServiceTest {
                 "테스트 기록"
         );
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> dailyRecordService.create(request)
         );
 
@@ -97,7 +98,7 @@ class DailyRecordServiceTest {
                 LocalTime.of(12, 0),
                 "테스트 기록");
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> dailyRecordService.create(request));
 
         assertEquals(
@@ -132,7 +133,7 @@ class DailyRecordServiceTest {
                 "테스트 기록"
         );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> dailyRecordService.create(request));
 
         assertEquals(
@@ -205,7 +206,7 @@ class DailyRecordServiceTest {
                 "테스트 기록"
         );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> dailyRecordService.create(request));
 
         assertEquals("존재하지 않는 카테고리 입니다.",
@@ -269,8 +270,8 @@ class DailyRecordServiceTest {
         when(dailyRecordRepository.findById(recordId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> dailyRecordService.getRecord(recordId)
         );
 
@@ -406,7 +407,7 @@ class DailyRecordServiceTest {
                         "수정된 기록"
                 );
 
-        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+        BusinessException exception = assertThrows(BusinessException.class,
                 () -> dailyRecordService.update(recordId, request));
 
         assertEquals(
@@ -442,8 +443,8 @@ class DailyRecordServiceTest {
         when(dailyRecordRepository.findById(recordId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> dailyRecordService.delete(recordId)
         );
 
@@ -512,8 +513,8 @@ class DailyRecordServiceTest {
         when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> dailyRecordService.getMonthlyRecords(categoryId, 2026, 9)
         );
 

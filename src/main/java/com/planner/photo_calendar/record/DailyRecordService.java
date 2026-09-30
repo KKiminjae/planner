@@ -7,6 +7,8 @@ import com.planner.photo_calendar.record.dto.request.DailyRecordUpdateRequest;
 import com.planner.photo_calendar.record.dto.response.DailyRecordResponse;
 import com.planner.photo_calendar.record.dto.response.MonthlyRecordResponse;
 import lombok.RequiredArgsConstructor;
+import com.planner.photo_calendar.common.exception.BusinessException;
+import com.planner.photo_calendar.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,25 +26,21 @@ public class DailyRecordService {
     public DailyRecordResponse create(DailyRecordCreateRequest request){
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(request.categoryId())
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 카테고리 입니다."));
+                        new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리 입니다."));
 
         LocalDate createdDate = category.getCreatedAt().toLocalDate();
 
         if(request.recordDate().isBefore(createdDate)){
-            throw new IllegalArgumentException(
-                    "카테고리 생성일 이전에는 기록할 수 없습니다."
-            );
+            throw new BusinessException(ErrorCode.RECORD_BEFORE_CATEGORY_CREATION, "카테고리 생성일 이전에는 기록할 수 없습니다.");
         }
         if(request.recordDate().isAfter(LocalDate.now())){
-            throw new IllegalArgumentException(
-                    "미래 날짜에는 기록할 수 없습니다."
-            );
+            throw new BusinessException(ErrorCode.FUTURE_RECORD_NOT_ALLOWED, "미래 날짜에는 기록할 수 없습니다.");
         }
 
         boolean exists = recordRepository.existsByCategoryIdAndRecordDate(category.getId(), request.recordDate());
 
         if(exists){
-            throw new IllegalArgumentException("해당 날짜에 이미 기록이 존재합니다.");
+            throw new BusinessException(ErrorCode.DUPLICATE_DAILY_RECORD, "해당 날짜에 이미 기록이 존재합니다.");
         }
 
         DailyRecord dailyRecord = new DailyRecord(
@@ -60,7 +58,7 @@ public class DailyRecordService {
     public DailyRecordResponse getRecord(Long id) {
         DailyRecord dailyRecord = recordRepository.findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 기록입니다."));
+                        new BusinessException(ErrorCode.RECORD_NOT_FOUND, "존재하지 않는 기록입니다."));
 
         return DailyRecordResponse.from(dailyRecord);
     }
@@ -69,7 +67,7 @@ public class DailyRecordService {
     public DailyRecordResponse update(Long id, DailyRecordUpdateRequest request){
         DailyRecord dailyRecord = recordRepository.findById(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 기록 입니다."));
+                        new BusinessException(ErrorCode.RECORD_NOT_FOUND, "존재하지 않는 기록 입니다."));
 
         dailyRecord.update(request.recordTime(), request.memo());
 
@@ -88,7 +86,7 @@ public class DailyRecordService {
     @Transactional
     public void delete(Long id){
         DailyRecord dailyRecord = recordRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 기록입니다."));
+                .orElseThrow(() -> new BusinessException(ErrorCode.RECORD_NOT_FOUND, "존재하지 않는 기록입니다."));
 
         recordRepository.delete(dailyRecord);
     }
@@ -97,7 +95,7 @@ public class DailyRecordService {
     public List<MonthlyRecordResponse> getMonthlyRecords(Long categoryId, int year, int month) {
         categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+                        new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리입니다."));
         YearMonth yearMonth = YearMonth.of(year, month);
 
         LocalDate startDate = yearMonth.atDay(1);

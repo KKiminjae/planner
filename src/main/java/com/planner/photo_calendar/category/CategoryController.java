@@ -14,6 +14,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
 
 @RestController
 @RequestMapping("/api/categories")
@@ -39,8 +41,8 @@ public class CategoryController {
     @GetMapping("/{id}/records")
     public List<MonthlyRecordResponse> getMonthlyRecords(
             @PathVariable Long id,
-            @RequestParam int year,
-            @RequestParam int month
+            @RequestParam @Min(1) @Max(9999) int year,
+            @RequestParam @Min(1) @Max(12) int month
     ) {
         return dailyRecordService.getMonthlyRecords(id, year, month);
     }
@@ -48,7 +50,7 @@ public class CategoryController {
     @GetMapping("/{id}/annual")
     public List<AnnualRecordResponse> getAnnualRecords(
             @PathVariable Long id,
-            @RequestParam int year
+            @RequestParam @Min(1) @Max(9999) int year
     ) {
         return categoryService.getAnnualRecords(id, year);
     }

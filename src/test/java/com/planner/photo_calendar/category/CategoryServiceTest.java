@@ -11,6 +11,7 @@ import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecord;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import org.junit.jupiter.api.Test;
+import com.planner.photo_calendar.common.exception.BusinessException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
@@ -173,8 +174,8 @@ class CategoryServiceTest {
         when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.update(categoryId, request)
         );
 
@@ -222,8 +223,8 @@ class CategoryServiceTest {
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(1L));
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.reorder(request)
         );
 
@@ -247,13 +248,13 @@ class CategoryServiceTest {
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(999L, 1L));
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.reorder(request)
         );
 
         assertEquals(
-                "존재하지 않는 카테고리입니다.",
+                "활성 카테고리 전체를 중복 없이 전달해야 합니다.",
                 exception.getMessage()
         );
         verify(firstCategory, never()).changeDisplayOrder(any(Integer.class));
@@ -270,8 +271,8 @@ class CategoryServiceTest {
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(1L, 1L));
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.reorder(request)
         );
 
@@ -335,8 +336,8 @@ class CategoryServiceTest {
         when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.delete(categoryId)
         );
 
@@ -401,8 +402,8 @@ class CategoryServiceTest {
         when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
                 .thenReturn(Optional.empty());
 
-        IllegalArgumentException exception = assertThrows(
-                IllegalArgumentException.class,
+        BusinessException exception = assertThrows(
+                BusinessException.class,
                 () -> categoryService.getAnnualRecords(categoryId, 2026)
         );
 

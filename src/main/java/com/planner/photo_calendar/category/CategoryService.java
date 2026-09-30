@@ -12,6 +12,8 @@ import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecord;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import lombok.RequiredArgsConstructor;
+import com.planner.photo_calendar.common.exception.BusinessException;
+import com.planner.photo_calendar.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,7 +61,7 @@ public class CategoryService {
     public CategoryResponse update(Long id, CategoryUpdateRequest request){
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 카테고리 입니다."));
+                        new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리 입니다."));
         category.update(request.name(), request.color(), request.isPrivate());
 
         return CategoryResponse.from(category);
@@ -70,11 +72,11 @@ public class CategoryService {
         List<Category> categories = categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc();
 
         if(categories.size() != request.categoryIds().size()) {
-            throw new IllegalArgumentException("모든 카테고리의 순서를 전달해야 합니다.");
+            throw new BusinessException(ErrorCode.INVALID_CATEGORY_ORDER, "모든 카테고리의 순서를 전달해야 합니다.");
         }
 
         if(request.categoryIds().stream().distinct().count() != request.categoryIds().size()) {
-            throw new IllegalArgumentException("모든 카테고리의 순서를 중복 없이 전달해야 합니다.");
+            throw new BusinessException(ErrorCode.INVALID_CATEGORY_ORDER, "모든 카테고리의 순서를 중복 없이 전달해야 합니다.");
         }
 
         Map<Long, Category> categoryMap = categories.stream()
@@ -90,7 +92,7 @@ public class CategoryService {
             Category category = categoryMap.get(categoryId);
 
             if(category == null) {
-                throw new IllegalArgumentException("존재하지 않는 카테고리입니다.");
+                throw new BusinessException(ErrorCode.INVALID_CATEGORY_ORDER);
             }
 
             category.changeDisplayOrder(i+1);
@@ -101,7 +103,7 @@ public class CategoryService {
     public void delete(Long categoryId){
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+                        new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리입니다."));
 
         List<DailyRecord> records = recordRepository.findAllByCategoryId(categoryId);
 
@@ -128,7 +130,7 @@ public class CategoryService {
     ) {
         Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
                 .orElseThrow(() ->
-                        new IllegalArgumentException("존재하지 않는 카테고리입니다."));
+                        new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리입니다."));
 
         LocalDate startDate = LocalDate.of(year, 1, 1);
         LocalDate endDate = LocalDate.of(year, 12, 31);

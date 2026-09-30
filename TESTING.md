@@ -33,3 +33,17 @@ Testcontainers가 실행 종료 후 컨테이너를 정리합니다.
 활성 집계의 고정 시각 데이터는 테스트 안에서 SQL로 설정하여 현재 시각에 의존하지 않습니다.
 
 HTML 결과는 `build/reports/tests/test/index.html`에 생성됩니다.
+
+## API 예외 처리 테스트
+
+Docker 없이 서비스 및 HTTP 오류 응답을 확인하려면:
+
+```bash
+./gradlew test --tests '*ServiceTest' --tests '*GlobalExceptionHandlerTest'
+```
+
+`GlobalExceptionHandlerTest`는 MockMvc로 400/404/409/500 응답과 공통 JSON 형식,
+필드 검증 오류, 잘못된 JSON·파라미터, 월·연도 경계, 405 상태 유지 등을 검증합니다.
+서비스는 mock으로 대체합니다. 예상하지 못한 오류의 상세 메시지는 응답에 포함하지 않습니다.
+`DailyRecordRepositoryTest`의 중복 저장 테스트는 실제 MySQL의 제약 위반이
+`DUPLICATE_DAILY_RECORD`(409)로 변환되는지도 확인합니다. 이 검증에는 Docker가 필요합니다.
