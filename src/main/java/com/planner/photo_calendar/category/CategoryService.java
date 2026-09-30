@@ -73,6 +73,10 @@ public class CategoryService {
             throw new IllegalArgumentException("모든 카테고리의 순서를 전달해야 합니다.");
         }
 
+        if(request.categoryIds().stream().distinct().count() != request.categoryIds().size()) {
+            throw new IllegalArgumentException("모든 카테고리의 순서를 중복 없이 전달해야 합니다.");
+        }
+
         Map<Long, Category> categoryMap = categories.stream()
                 .collect(Collectors.toMap(
                         Category::getId,
