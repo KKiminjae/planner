@@ -40,6 +40,33 @@ import static org.mockito.Mockito.never;
 class CategoryServiceTest {
 
     @Test
+    void 오늘_모아보기는_현재_카테고리만_반환한다() {
+        LocalDate today = LocalDate.of(2026, 10, 2);
+        when(applicationTime.today()).thenReturn(today);
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
+                .thenReturn(java.util.Collections.nCopies(4, new Category(1L, "기록", "#F4BED2", 1, false)));
+        assertEquals(4, categoryService.getDailyCategories(today).size());
+        verify(categoryRepository, never()).findActiveCategoriesByOwnerAt(any(), any(), any());
+    }
+
+    @Test
+    void 날짜별_카테고리는_소유자와_한국시간_하루경계로_조회하고_삭제여부를_표시한다() {
+        when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 3));
+        LocalDate date = LocalDate.of(2026, 10, 2);
+        var start = java.time.LocalDateTime.of(2026, 10, 1, 15, 0);
+        Category active = new Category(1L, "운동", "#123456", 1, false);
+        Category deleted = new Category(1L, "삭제됨", "#234567", 2, false);
+        deleted.delete();
+        when(categoryRepository.findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1)))
+                .thenReturn(List.of(active, deleted));
+        var result = categoryService.getDailyCategories(date);
+        assertEquals(2, result.size());
+        assertFalse(result.get(0).isDeleted());
+        assertTrue(result.get(1).isDeleted());
+        verify(categoryRepository).findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1));
+    }
+
+    @Test
     void 한국시간_자정의_오늘을_연간달력에서_미래로_분류하지_않는다() {
         when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 2));
         Category category = mock(Category.class);

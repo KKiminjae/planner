@@ -35,6 +35,25 @@ class CategoryControllerTest {
             """;
 
     @Test
+    void 날짜별_카테고리_조회는_삭제상태를_포함해_반환한다() throws Exception {
+        LocalDate date = LocalDate.of(2026, 10, 2);
+        when(service.getDailyCategories(date)).thenReturn(List.of(
+                new DailyCategoryResponse(7L, "운동", "#123456", 2, true, false)));
+        mvc.perform(get("/api/categories/daily").param("date", "2026-10-02"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(7))
+                .andExpect(jsonPath("$[0].isDeleted").value(false));
+        verify(service).getDailyCategories(date);
+    }
+
+    @Test
+    void 날짜별_카테고리_조회는_잘못된_날짜를_거부한다() throws Exception {
+        mvc.perform(get("/api/categories/daily").param("date", "invalid"))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(service);
+    }
+
+    @Test
     void 카테고리_생성은_201과_카테고리_정보를_반환한다() throws Exception {
         CategoryCreateRequest request = new CategoryCreateRequest("운동", "#123456", true);
         when(service.create(request)).thenReturn(category);

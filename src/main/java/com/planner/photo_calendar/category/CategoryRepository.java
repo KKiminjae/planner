@@ -23,6 +23,15 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     Optional<Category> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
 
     @Query("""
+            select c from Category c where c.ownerId = :ownerId
+              and c.createdAt < :nextDay and (c.deletedAt is null or c.deletedAt >= :startOfDay)
+            order by c.displayOrder, c.id
+            """)
+    List<Category> findActiveCategoriesByOwnerAt(@Param("ownerId") Long ownerId,
+                                                @Param("startOfDay") LocalDateTime startOfDay,
+                                                @Param("nextDay") LocalDateTime nextDay);
+
+    @Query("""
             select count(c) from Category c where c.ownerId = :ownerId
               and c.createdAt < :nextDay and (c.deletedAt is null or c.deletedAt >= :startOfDay)
             """)

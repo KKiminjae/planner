@@ -20,6 +20,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CalendarService {
     private final CurrentOwner currentOwner;
+    private final ApplicationTime applicationTime;
     private final CategoryRepository categoryRepository;
 
     private final DailyRecordRepository dailyRecordRepository;
@@ -38,15 +39,21 @@ public class CalendarService {
 
         List<IntegratedCalendarResponse> response = new ArrayList<>();
 
+        LocalDate today = applicationTime.today();
+        long activeCount = categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(currentOwner.id()).size();
         while (!startDate.isAfter(endDate)){
             LocalDateTime startOfDay = ApplicationTime.startOfDayUtc(startDate);
             LocalDateTime nextDay = ApplicationTime.startOfDayUtc(startDate.plusDays(1));
 
-            long totalCount = categoryRepository.countActiveCategoriesByOwnerAt(currentOwner.id(), startOfDay, nextDay);
+            long totalCount = startDate.isBefore(today)
+                    ? categoryRepository.countActiveCategoriesByOwnerAt(currentOwner.id(), startOfDay, nextDay)
+                    : activeCount;
 
             long currentRecordCount = dailyRecordRepository.countByRecordDateAndCategoryOwnerId(startDate, currentOwner.id());
 
-            long historyCount = completionHistoryRepository.countById_RecordDateAndCategoryOwnerId(startDate, currentOwner.id());
+            long historyCount = startDate.isBefore(today)
+                    ? completionHistoryRepository.countById_RecordDateAndCategoryOwnerId(startDate, currentOwner.id())
+                    : 0;
 
             long completedCount = currentRecordCount + historyCount;
 

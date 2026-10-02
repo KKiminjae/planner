@@ -58,3 +58,9 @@ id_ed25519
 *.sql.gz.sha256
 __pycache__/
 *.py[cod]
+
+# Frontend artifacts
+frontend/node_modules/
+frontend/dist/
+frontend/test-results/
+frontend/playwright-report/

@@ -5,6 +5,7 @@ import com.planner.photo_calendar.category.dto.request.CategoryCreateRequest;
 import com.planner.photo_calendar.category.dto.request.CategoryReorderRequest;
 import com.planner.photo_calendar.category.dto.response.AnnualRecordResponse;
 import com.planner.photo_calendar.category.dto.response.CategoryResponse;
+import com.planner.photo_calendar.category.dto.response.DailyCategoryResponse;
 import com.planner.photo_calendar.category.dto.request.CategoryUpdateRequest;
 import com.planner.photo_calendar.completionhistory.CompletionHistory;
 import com.planner.photo_calendar.completionhistory.CompletionHistoryId;
@@ -60,6 +61,17 @@ public class CategoryService {
                 .stream()
                 .map(CategoryResponse::from)
                 .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<DailyCategoryResponse> getDailyCategories(LocalDate date) {
+        if (!date.isBefore(applicationTime.today())) {
+            return categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(currentOwner.id())
+                    .stream().map(DailyCategoryResponse::from).toList();
+        }
+        return categoryRepository.findActiveCategoriesByOwnerAt(currentOwner.id(),
+                        ApplicationTime.startOfDayUtc(date), ApplicationTime.startOfDayUtc(date.plusDays(1)))
+                .stream().map(DailyCategoryResponse::from).toList();
     }
 
     @Transactional

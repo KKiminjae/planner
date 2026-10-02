@@ -4,6 +4,8 @@ import com.planner.photo_calendar.category.dto.request.CategoryCreateRequest;
 import com.planner.photo_calendar.category.dto.request.CategoryReorderRequest;
 import com.planner.photo_calendar.category.dto.response.AnnualRecordResponse;
 import com.planner.photo_calendar.category.dto.response.CategoryResponse;
+import com.planner.photo_calendar.category.dto.response.DailyCategoryResponse;
+import java.time.LocalDate;
 import com.planner.photo_calendar.category.dto.request.CategoryUpdateRequest;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import com.planner.photo_calendar.record.DailyRecordService;
@@ -36,6 +38,11 @@ public class CategoryController {
     @GetMapping
     public List<CategoryResponse> getCategories(){
         return categoryService.getCategories();
+    }
+
+    @GetMapping("/daily")
+    public List<DailyCategoryResponse> getDailyCategories(@RequestParam LocalDate date) {
+        return categoryService.getDailyCategories(date);
     }
 
     @GetMapping("/{id}/records")

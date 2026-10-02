@@ -38,13 +38,30 @@ class CalendarServiceTest {
     @Mock
     private CurrentOwner currentOwner;
 
+    @Mock
+    private com.planner.photo_calendar.common.time.ApplicationTime applicationTime;
+
     @BeforeEach
     void 로그인_소유자를_설정한다() {
         org.mockito.Mockito.lenient().when(currentOwner.id()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(applicationTime.today()).thenReturn(LocalDate.of(2027, 1, 1));
     }
 
     @InjectMocks
     private CalendarService calendarService;
+
+    @Test
+    void 오늘은_삭제된_카테고리와_완료이력을_제외한다() {
+        when(applicationTime.today()).thenReturn(LocalDate.of(2026, 9, 1));
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
+                .thenReturn(java.util.Collections.nCopies(4, new com.planner.photo_calendar.category.Category(1L, "기록", "#F4BED2", 1, false)));
+        when(dailyRecordRepository.countByRecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L))).thenReturn(2L);
+        var result = calendarService.getIntegratedCalender(2026, 9);
+        assertEquals(4, result.get(0).totalCount());
+        assertEquals(2, result.get(0).completedCount());
+        org.mockito.Mockito.verifyNoInteractions(completionHistoryRepository);
+        verify(categoryRepository, org.mockito.Mockito.never()).countActiveCategoriesByOwnerAt(any(), any(), any());
+    }
 
     @Test
     void 해당_월의_모든_날짜별_통합현황을_반환한다() {

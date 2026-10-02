@@ -65,6 +65,25 @@ class CategoryRepositoryTest extends MySqlIntegrationTest {
         assertThat(repository.countActiveCategoriesAt(start, start.plusDays(1))).isZero();
     }
 
+    @Test
+    void 날짜별_목록은_생성삭제경계와_소유자를_적용하고_집계분모와_일치한다() {
+        LocalDateTime start = com.planner.photo_calendar.common.time.ApplicationTime.startOfDayUtc(LocalDate.of(2026, 10, 2));
+        LocalDateTime next = start.plusDays(1);
+        saveAt("기존", start.minusDays(1), null);
+        saveAt("당일 생성", next.minusSeconds(1), null);
+        saveAt("이후 생성", next, null);
+        saveAt("이전 삭제", start.minusDays(2), start.minusSeconds(1));
+        saveAt("당일 삭제", start.minusDays(2), start);
+        Category other = repository.saveAndFlush(new Category(2L, "다른 소유자", "#123456", 1, false));
+        entityManager.createNativeQuery("UPDATE categories SET created_at = :created WHERE id = :id")
+                .setParameter("created", start.minusDays(1)).setParameter("id", other.getId()).executeUpdate();
+        entityManager.flush();
+        entityManager.clear();
+        var categories = repository.findActiveCategoriesByOwnerAt(1L, start, next);
+        assertThat(categories).extracting(Category::getName).containsExactly("기존", "당일 생성", "당일 삭제");
+        assertThat(categories).hasSize((int) repository.countActiveCategoriesByOwnerAt(1L, start, next));
+    }
+
     private Category save(String name, int order) {
         return repository.saveAndFlush(new Category(name, "#FF0000", order, false));
     }
