@@ -1,0 +1,14 @@
+[Unit]
+Description=Photo Calendar database backup
+After=docker.service
+Requires=docker.service
+OnFailure=photo-calendar-backup-alert.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/photo-calendar-backup-retry
+UMask=0077
+Nice=10
+IOSchedulingClass=best-effort
+IOSchedulingPriority=7
+TimeoutStartSec=50min

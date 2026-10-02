@@ -1,0 +1,9 @@
+[Unit]
+Description=Photo Calendar backup test failure email
+
+[Service]
+Type=oneshot
+EnvironmentFile=/home/ubuntu/photo-calendar/alerts.env
+ExecStart=/usr/bin/python3 /usr/local/lib/photo-calendar/notify-operation.py "TEST: An isolated backup failure test triggered this email. The production database and backup service were not affected."
+UMask=0077
+TimeoutStartSec=60

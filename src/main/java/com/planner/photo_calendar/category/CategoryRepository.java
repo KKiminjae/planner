@@ -11,6 +11,24 @@ import java.util.List;
 import java.util.Optional;
 
 public interface CategoryRepository extends JpaRepository<Category, Long> {
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("select c from Category c where c.id = :id and c.ownerId = :ownerId and c.deletedAt is null")
+    Optional<Category> findActiveOwnedByIdForUpdate(@Param("id") Long id, @Param("ownerId") Long ownerId);
+
+
+    @Query("select coalesce(max(c.displayOrder), 0) from Category c where c.ownerId = :ownerId and c.deletedAt is null")
+    int findMaxDisplayOrderByOwnerId(@Param("ownerId") Long ownerId);
+
+    List<Category> findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(Long ownerId);
+    Optional<Category> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
+
+    @Query("""
+            select count(c) from Category c where c.ownerId = :ownerId
+              and c.createdAt < :nextDay and (c.deletedAt is null or c.deletedAt >= :startOfDay)
+            """)
+    long countActiveCategoriesByOwnerAt(@Param("ownerId") Long ownerId,
+                                        @Param("startOfDay") LocalDateTime startOfDay,
+                                        @Param("nextDay") LocalDateTime nextDay);
 
     @Query("""
             SELECT COALESCE(MAX(c.displayOrder), 0)

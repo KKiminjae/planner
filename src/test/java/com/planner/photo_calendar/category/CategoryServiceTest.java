@@ -11,6 +11,8 @@ import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecord;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import com.planner.photo_calendar.auth.CurrentOwner;
 import com.planner.photo_calendar.common.exception.BusinessException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -37,6 +39,23 @@ import static org.mockito.Mockito.never;
 @ExtendWith(MockitoExtension.class)
 class CategoryServiceTest {
 
+    @Test
+    void 한국시간_자정의_오늘을_연간달력에서_미래로_분류하지_않는다() {
+        when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 2));
+        Category category = mock(Category.class);
+        when(category.getCreatedAt()).thenReturn(java.time.LocalDateTime.of(2026, 10, 1, 15, 5));
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(1L, 1L)).thenReturn(Optional.of(category));
+        when(dailyRecordRepository.findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
+                1L, LocalDate.of(2026, 1, 1), LocalDate.of(2026, 12, 31))).thenReturn(List.of());
+        List<AnnualRecordResponse> days = categoryService.getAnnualRecords(1L, 2026);
+        assertEquals(AnnualRecordStatus.NO_DATE, days.stream().filter(day -> day.month() == 10 && day.day() == 1)
+                .findFirst().orElseThrow().status());
+        assertEquals(AnnualRecordStatus.MISSED, days.stream().filter(day -> day.month() == 10 && day.day() == 2)
+                .findFirst().orElseThrow().status());
+        assertEquals(AnnualRecordStatus.FUTURE, days.stream().filter(day -> day.month() == 10 && day.day() == 3)
+                .findFirst().orElseThrow().status());
+    }
+
     @Mock
     private CategoryRepository categoryRepository;
 
@@ -45,6 +64,21 @@ class CategoryServiceTest {
 
     @Mock
     private CompletionHistoryRepository completionHistoryRepository;
+
+    @Mock
+    private CurrentOwner currentOwner;
+
+    @Mock
+    private com.planner.photo_calendar.common.time.ApplicationTime applicationTime;
+
+    @BeforeEach
+    void 로그인_소유자를_설정한다() {
+        org.mockito.Mockito.lenient().when(currentOwner.id()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(applicationTime.today()).thenReturn(LocalDate.now());
+    }
+
+    @Mock
+    private com.planner.photo_calendar.record.DailyRecordService dailyRecordService;
 
     @InjectMocks
     private CategoryService categoryService;
@@ -57,14 +91,14 @@ class CategoryServiceTest {
                 false
         );
 
-        when(categoryRepository.findMaxDisplayOrder()).thenReturn(2);
+        when(categoryRepository.findMaxDisplayOrderByOwnerId(1L)).thenReturn(2);
         when(categoryRepository.save(any(Category.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         CategoryResponse response = categoryService.create(request);
 
         ArgumentCaptor<Category> categoryCaptor = ArgumentCaptor.forClass(Category.class);
-        verify(categoryRepository, times(1)).findMaxDisplayOrder();
+        verify(categoryRepository, times(1)).findMaxDisplayOrderByOwnerId(1L);
         verify(categoryRepository, times(1)).save(categoryCaptor.capture());
 
         Category savedCategory = categoryCaptor.getValue();
@@ -87,7 +121,7 @@ class CategoryServiceTest {
                 false
         );
 
-        when(categoryRepository.findMaxDisplayOrder()).thenReturn(0);
+        when(categoryRepository.findMaxDisplayOrderByOwnerId(1L)).thenReturn(0);
         when(categoryRepository.save(any(Category.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -105,7 +139,7 @@ class CategoryServiceTest {
         Category firstCategory = new Category("운동", "#FF0000", 1, false);
         Category secondCategory = new Category("공부", "#0000FF", 2, true);
 
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of(firstCategory, secondCategory));
 
         List<CategoryResponse> responses = categoryService.getCategories();
@@ -119,12 +153,12 @@ class CategoryServiceTest {
         assertEquals(true, responses.get(1).isPrivate());
 
         verify(categoryRepository, times(1))
-                .findAllByDeletedAtIsNullOrderByDisplayOrderAsc();
+                .findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L);
     }
 
     @Test
     void 조회할_카테고리가_없으면_빈목록을_반환한다() {
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of());
 
         List<CategoryResponse> responses = categoryService.getCategories();
@@ -133,7 +167,7 @@ class CategoryServiceTest {
         assertTrue(responses.isEmpty());
 
         verify(categoryRepository, times(1))
-                .findAllByDeletedAtIsNullOrderByDisplayOrderAsc();
+                .findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L);
     }
 
     @Test
@@ -146,7 +180,7 @@ class CategoryServiceTest {
                 true
         );
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         CategoryResponse response = categoryService.update(categoryId, request);
@@ -159,7 +193,7 @@ class CategoryServiceTest {
         assertTrue(response.isPrivate());
 
         verify(categoryRepository, times(1))
-                .findByIdAndDeletedAtIsNull(categoryId);
+                .findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L);
     }
 
     @Test
@@ -171,7 +205,7 @@ class CategoryServiceTest {
                 true
         );
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -185,7 +219,7 @@ class CategoryServiceTest {
         );
 
         verify(categoryRepository, times(1))
-                .findByIdAndDeletedAtIsNull(categoryId);
+                .findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L);
     }
 
     @Test
@@ -197,7 +231,7 @@ class CategoryServiceTest {
         when(firstCategory.getId()).thenReturn(1L);
         when(secondCategory.getId()).thenReturn(2L);
         when(thirdCategory.getId()).thenReturn(3L);
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of(firstCategory, secondCategory, thirdCategory));
 
         CategoryReorderRequest request = new CategoryReorderRequest(
@@ -210,7 +244,7 @@ class CategoryServiceTest {
         verify(firstCategory, times(1)).changeDisplayOrder(2);
         verify(secondCategory, times(1)).changeDisplayOrder(3);
         verify(categoryRepository, times(1))
-                .findAllByDeletedAtIsNullOrderByDisplayOrderAsc();
+                .findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L);
     }
 
     @Test
@@ -218,7 +252,7 @@ class CategoryServiceTest {
         Category firstCategory = mock(Category.class);
         Category secondCategory = mock(Category.class);
 
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of(firstCategory, secondCategory));
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(1L));
@@ -243,7 +277,7 @@ class CategoryServiceTest {
 
         when(firstCategory.getId()).thenReturn(1L);
         when(secondCategory.getId()).thenReturn(2L);
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of(firstCategory, secondCategory));
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(999L, 1L));
@@ -266,7 +300,7 @@ class CategoryServiceTest {
         Category firstCategory = mock(Category.class);
         Category secondCategory = mock(Category.class);
 
-        when(categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc())
+        when(categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(1L))
                 .thenReturn(List.of(firstCategory, secondCategory));
 
         CategoryReorderRequest request = new CategoryReorderRequest(List.of(1L, 1L));
@@ -293,10 +327,12 @@ class CategoryServiceTest {
         DailyRecord secondRecord = mock(DailyRecord.class);
         List<DailyRecord> records = List.of(firstRecord, secondRecord);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(dailyRecordRepository.findAllByCategoryId(categoryId))
                 .thenReturn(records);
+        when(firstRecord.getId()).thenReturn(11L);
+        when(secondRecord.getId()).thenReturn(12L);
         when(firstRecord.getRecordDate()).thenReturn(LocalDate.of(2026, 9, 1));
         when(secondRecord.getRecordDate()).thenReturn(LocalDate.of(2026, 9, 2));
 
@@ -308,7 +344,8 @@ class CategoryServiceTest {
                 .saveAll(historyCaptor.capture());
         assertEquals(2, historyCaptor.getValue().size());
 
-        verify(dailyRecordRepository, times(1)).deleteAll(records);
+        verify(dailyRecordService).delete(11L);
+        verify(dailyRecordService).delete(12L);
         assertNotNull(category.getDeletedAt());
     }
 
@@ -317,7 +354,7 @@ class CategoryServiceTest {
         Long categoryId = 1L;
         Category category = new Category("운동", "#FF0000", 1, false);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(dailyRecordRepository.findAllByCategoryId(categoryId))
                 .thenReturn(List.of());
@@ -325,7 +362,7 @@ class CategoryServiceTest {
         categoryService.delete(categoryId);
 
         verify(completionHistoryRepository, times(1)).saveAll(List.of());
-        verify(dailyRecordRepository, times(1)).deleteAll(List.of());
+        org.mockito.Mockito.verifyNoInteractions(dailyRecordService);
         assertNotNull(category.getDeletedAt());
     }
 
@@ -333,7 +370,7 @@ class CategoryServiceTest {
     void 존재하지_않는_카테고리는_삭제할_수_없다() {
         Long categoryId = 999L;
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -361,7 +398,7 @@ class CategoryServiceTest {
         Category category = mock(Category.class);
         DailyRecord record = mock(DailyRecord.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(category.getCreatedAt()).thenReturn(createdDate.atStartOfDay());
         when(dailyRecordRepository
@@ -399,7 +436,7 @@ class CategoryServiceTest {
     void 존재하지_않는_카테고리의_연간기록은_조회할_수_없다() {
         Long categoryId = 999L;
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -425,7 +462,7 @@ class CategoryServiceTest {
         int year = 2025;
         Category category = mock(Category.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(category.getCreatedAt()).thenReturn(LocalDate.of(2025, 1, 1).atStartOfDay());
         when(dailyRecordRepository
@@ -451,7 +488,7 @@ class CategoryServiceTest {
         Category category = mock(Category.class);
         DailyRecord record = mock(DailyRecord.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(category.getCreatedAt()).thenReturn(LocalDate.of(2024, 1, 1).atStartOfDay());
         when(dailyRecordRepository

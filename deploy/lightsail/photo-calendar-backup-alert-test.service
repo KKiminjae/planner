@@ -1,0 +1,7 @@
+[Unit]
+Description=Isolated Photo Calendar backup alert failure test
+OnFailure=photo-calendar-backup-alert-test-notify.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/false

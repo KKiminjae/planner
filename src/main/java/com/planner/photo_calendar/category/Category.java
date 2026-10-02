@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.Getter;
 
 import java.time.LocalDateTime;
+import com.planner.photo_calendar.common.time.ApplicationTime;
 
 @Entity
 @Getter
@@ -12,6 +13,9 @@ public class Category {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(name = "owner_id", nullable = false)
+    private Long ownerId;
 
     @Column(nullable = false, length = 50)
     private String name;
@@ -35,12 +39,18 @@ public class Category {
     }
 
     public Category(String name, String color, Integer displayOrder, Boolean isPrivate) {
+        this.ownerId = 1L;
         this.name = name;
         this.color = color;
         this.displayOrder = displayOrder;
         this.isPrivate = isPrivate;
-        this.createdAt = LocalDateTime.now();
+        this.createdAt = ApplicationTime.nowUtc();
         this.deletedAt = null;
+    }
+
+    public Category(Long ownerId, String name, String color, Integer displayOrder, Boolean isPrivate) {
+        this(name, color, displayOrder, isPrivate);
+        this.ownerId = ownerId;
     }
 
     public void update(
@@ -58,6 +68,6 @@ public class Category {
     }
 
     public void delete(){
-        this.deletedAt = LocalDateTime.now();
+        this.deletedAt = ApplicationTime.nowUtc();
     }
 }

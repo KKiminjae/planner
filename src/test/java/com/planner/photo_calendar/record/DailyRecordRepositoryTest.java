@@ -9,6 +9,7 @@ import com.planner.photo_calendar.common.exception.GlobalExceptionHandler;
 import com.planner.photo_calendar.common.exception.ErrorResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.ResponseEntity;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -29,7 +30,7 @@ class DailyRecordRepositoryTest extends MySqlIntegrationTest {
         entityManager.clear();
         assertThatThrownBy(() -> save(category, date, 18))
                 .isInstanceOfSatisfying(DataIntegrityViolationException.class, exception -> {
-                    var response = new GlobalExceptionHandler().handleIntegrity(exception);
+                    ResponseEntity<Object> response = new GlobalExceptionHandler().handleIntegrity(exception);
                     assertThat(response.getStatusCode().value()).isEqualTo(409);
                     assertThat(((ErrorResponse) response.getBody()).code()).isEqualTo("DUPLICATE_DAILY_RECORD");
                 });

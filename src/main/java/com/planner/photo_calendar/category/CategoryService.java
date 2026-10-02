@@ -12,6 +12,8 @@ import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecord;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import lombok.RequiredArgsConstructor;
+import com.planner.photo_calendar.auth.CurrentOwner;
+import com.planner.photo_calendar.common.time.ApplicationTime;
 import com.planner.photo_calendar.common.exception.BusinessException;
 import com.planner.photo_calendar.common.exception.ErrorCode;
 import org.springframework.stereotype.Service;
@@ -28,6 +30,9 @@ import java.util.stream.Collectors;
 @Service
 @RequiredArgsConstructor
 public class CategoryService {
+    private final ApplicationTime applicationTime;
+    private final CurrentOwner currentOwner;
+    private final com.planner.photo_calendar.record.DailyRecordService dailyRecordService;
     private final CategoryRepository categoryRepository;
 
     private final DailyRecordRepository recordRepository;
@@ -36,9 +41,9 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponse create(CategoryCreateRequest request){
-        int displayOrder = categoryRepository.findMaxDisplayOrder() + 1;
+        int displayOrder = categoryRepository.findMaxDisplayOrderByOwnerId(currentOwner.id()) + 1;
 
-        Category category = new Category(request.name(),
+        Category category = new Category(currentOwner.id(), request.name(),
                 request.color(),
                 displayOrder,
                 request.isPrivate());
@@ -51,7 +56,7 @@ public class CategoryService {
     @Transactional (readOnly = true)
     public List<CategoryResponse> getCategories() {
 
-        return categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc()
+        return categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(currentOwner.id())
                 .stream()
                 .map(CategoryResponse::from)
                 .toList();
@@ -59,7 +64,7 @@ public class CategoryService {
 
     @Transactional
     public CategoryResponse update(Long id, CategoryUpdateRequest request){
-        Category category = categoryRepository.findByIdAndDeletedAtIsNull(id)
+        Category category = categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(id, currentOwner.id())
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리 입니다."));
         category.update(request.name(), request.color(), request.isPrivate());
@@ -69,7 +74,7 @@ public class CategoryService {
 
     @Transactional
     public void reorder(CategoryReorderRequest request){
-        List<Category> categories = categoryRepository.findAllByDeletedAtIsNullOrderByDisplayOrderAsc();
+        List<Category> categories = categoryRepository.findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(currentOwner.id());
 
         if(categories.size() != request.categoryIds().size()) {
             throw new BusinessException(ErrorCode.INVALID_CATEGORY_ORDER, "모든 카테고리의 순서를 전달해야 합니다.");
@@ -101,7 +106,7 @@ public class CategoryService {
 
     @Transactional
     public void delete(Long categoryId){
-        Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
+        Category category = categoryRepository.findActiveOwnedByIdForUpdate(categoryId, currentOwner.id())
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리입니다."));
 
@@ -118,7 +123,9 @@ public class CategoryService {
 
         completionHistoryRepository.saveAll(histories);
 
-        recordRepository.deleteAll(records);
+        for (DailyRecord record : records) {
+            dailyRecordService.delete(record.getId());
+        }
 
         category.delete();
     }
@@ -128,7 +135,7 @@ public class CategoryService {
             Long categoryId,
             int year
     ) {
-        Category category = categoryRepository.findByIdAndDeletedAtIsNull(categoryId)
+        Category category = categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, currentOwner.id())
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리입니다."));
 
@@ -145,8 +152,8 @@ public class CategoryService {
                 .map(DailyRecord::getRecordDate)
                 .collect(Collectors.toSet());
 
-        LocalDate createDate = category.getCreatedAt().toLocalDate();
-        LocalDate today = LocalDate.now();
+        LocalDate createDate = ApplicationTime.calendarDate(category.getCreatedAt());
+        LocalDate today = applicationTime.today();
 
         ArrayList<AnnualRecordResponse> response = new ArrayList<>();
 

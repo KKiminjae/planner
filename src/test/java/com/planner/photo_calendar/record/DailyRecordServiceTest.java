@@ -7,6 +7,8 @@ import com.planner.photo_calendar.record.dto.request.DailyRecordUpdateRequest;
 import com.planner.photo_calendar.record.dto.response.DailyRecordResponse;
 import com.planner.photo_calendar.record.dto.response.MonthlyRecordResponse;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import com.planner.photo_calendar.auth.CurrentOwner;
 import com.planner.photo_calendar.common.exception.BusinessException;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -24,11 +26,51 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class DailyRecordServiceTest {
 
+    @Test
+    void 한국시간_자정이_지나면_UTC의_내일인_오늘기록을_허용한다() {
+        when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 2));
+        Category category = mock(Category.class);
+        when(category.getId()).thenReturn(1L);
+        when(category.getCreatedAt()).thenReturn(java.time.LocalDateTime.of(2026, 10, 1, 14, 0));
+        when(categoryRepository.findActiveOwnedByIdForUpdate(1L, 1L)).thenReturn(Optional.of(category));
+        when(dailyRecordRepository.save(any(DailyRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        DailyRecordResponse response = dailyRecordService.create(new DailyRecordCreateRequest(
+                1L, LocalDate.of(2026, 10, 2), LocalTime.of(0, 30), "자정 기록"));
+        assertEquals(LocalDate.of(2026, 10, 2), response.recordDate());
+        assertEquals(LocalTime.of(0, 30), response.recordTime());
+    }
+
+    @Test
+    void 한국시간_자정_이후_만든_카테고리는_UTC상_같은날인_어제기록을_거부한다() {
+        Category category = mock(Category.class);
+        when(category.getCreatedAt()).thenReturn(java.time.LocalDateTime.of(2026, 10, 1, 15, 1));
+        when(categoryRepository.findActiveOwnedByIdForUpdate(1L, 1L)).thenReturn(Optional.of(category));
+        BusinessException error = assertThrows(BusinessException.class, () -> dailyRecordService.create(
+                new DailyRecordCreateRequest(1L, LocalDate.of(2026, 10, 1), LocalTime.NOON, "이전 날짜")));
+        assertEquals("카테고리 생성일 이전에는 기록할 수 없습니다.", error.getMessage());
+        verify(dailyRecordRepository, never()).save(any());
+    }
+
     @Mock
     private CategoryRepository categoryRepository;
 
     @Mock
     private DailyRecordRepository dailyRecordRepository;
+
+    @Mock
+    private com.planner.photo_calendar.photo.PhotoLinkService photoLinkService;
+
+    @Mock
+    private CurrentOwner currentOwner;
+
+    @Mock
+    private com.planner.photo_calendar.common.time.ApplicationTime applicationTime;
+
+    @BeforeEach
+    void 로그인_소유자를_설정한다() {
+        org.mockito.Mockito.lenient().when(currentOwner.id()).thenReturn(1L);
+        org.mockito.Mockito.lenient().when(applicationTime.today()).thenReturn(LocalDate.now());
+    }
 
     @InjectMocks
     private DailyRecordService dailyRecordService;
@@ -41,7 +83,7 @@ class DailyRecordServiceTest {
 
         Category category = mock(Category.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         when(category.getId())
@@ -86,7 +128,7 @@ class DailyRecordServiceTest {
 
         Category category = mock(Category.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         when(category.getCreatedAt())
@@ -120,7 +162,7 @@ class DailyRecordServiceTest {
 
         Category category = mock(Category.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         when(category.getCreatedAt())
@@ -156,7 +198,7 @@ class DailyRecordServiceTest {
 
         Category category = mock(Category.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         when(dailyRecordRepository.existsByCategoryIdAndRecordDate(
@@ -196,7 +238,7 @@ class DailyRecordServiceTest {
     void 존재하지_않는_카테고리에_생성x(){
         Long categoryId = 999L;
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.empty());
 
         DailyRecordCreateRequest request = new DailyRecordCreateRequest(
@@ -226,7 +268,7 @@ class DailyRecordServiceTest {
         DailyRecord dailyRecord = mock(DailyRecord.class);
         Category category = mock(Category.class);
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findByIdAndCategoryOwnerId(recordId, 1L))
                 .thenReturn(Optional.of(dailyRecord));
 
         when(dailyRecord.getCategory())
@@ -267,7 +309,7 @@ class DailyRecordServiceTest {
     void 존재하지_않는_기록은_조회x() {
         Long recordId = 999L;
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findByIdAndCategoryOwnerId(recordId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -281,7 +323,7 @@ class DailyRecordServiceTest {
         );
 
         verify(dailyRecordRepository, times(1))
-                .findById(recordId);
+                .findByIdAndCategoryOwnerId(recordId, 1L);
     }
 
     @Test
@@ -309,7 +351,7 @@ class DailyRecordServiceTest {
         when(dinnerRecord.getRecordTime()).thenReturn(LocalTime.of(18, 30));
         when(dinnerRecord.getMemo()).thenReturn("저녁 기록");
 
-        when(dailyRecordRepository.findAllByRecordDateOrderByRecordTimeAsc(recordDate))
+        when(dailyRecordRepository.findAllByRecordDateAndCategoryOwnerIdOrderByRecordTimeAsc(recordDate, 1L))
                 .thenReturn(List.of(lunchRecord, dinnerRecord));
 
         List<DailyRecordResponse> responses = dailyRecordService.getDailyRecords(recordDate);
@@ -321,14 +363,14 @@ class DailyRecordServiceTest {
         assertEquals(LocalTime.of(18, 30), responses.get(1).recordTime());
 
         verify(dailyRecordRepository, times(1))
-                .findAllByRecordDateOrderByRecordTimeAsc(recordDate);
+                .findAllByRecordDateAndCategoryOwnerIdOrderByRecordTimeAsc(recordDate, 1L);
     }
 
     @Test
     void 특정날짜에_기록이_없으면_빈목록을_반환한다() {
         LocalDate recordDate = LocalDate.of(2026, 9, 21);
 
-        when(dailyRecordRepository.findAllByRecordDateOrderByRecordTimeAsc(recordDate))
+        when(dailyRecordRepository.findAllByRecordDateAndCategoryOwnerIdOrderByRecordTimeAsc(recordDate, 1L))
                 .thenReturn(List.of());
 
         List<DailyRecordResponse> responses = dailyRecordService.getDailyRecords(recordDate);
@@ -337,7 +379,7 @@ class DailyRecordServiceTest {
         assertTrue(responses.isEmpty());
 
         verify(dailyRecordRepository, times(1))
-                .findAllByRecordDateOrderByRecordTimeAsc(recordDate);
+                .findAllByRecordDateAndCategoryOwnerIdOrderByRecordTimeAsc(recordDate, 1L);
     }
 
     @Test
@@ -349,7 +391,7 @@ class DailyRecordServiceTest {
         DailyRecord dailyRecord = mock(DailyRecord.class);
         Category category = mock(Category.class);
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findOwnedByIdForUpdate(recordId, 1L))
                 .thenReturn(Optional.of(dailyRecord));
 
         when(dailyRecord.getId())
@@ -398,7 +440,7 @@ class DailyRecordServiceTest {
     void 존재하지_않는_기록은_수정x(){
         Long recordId = 999L;
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findOwnedByIdForUpdate(recordId, 1L))
                 .thenReturn(Optional.empty());
 
         DailyRecordUpdateRequest request =
@@ -425,13 +467,13 @@ class DailyRecordServiceTest {
         Long recordId = 1L;
         DailyRecord dailyRecord = mock(DailyRecord.class);
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findOwnedByIdForUpdate(recordId, 1L))
                 .thenReturn(Optional.of(dailyRecord));
 
         dailyRecordService.delete(recordId);
 
         verify(dailyRecordRepository, times(1))
-                .findById(recordId);
+                .findOwnedByIdForUpdate(recordId, 1L);
         verify(dailyRecordRepository, times(1))
                 .delete(dailyRecord);
     }
@@ -440,7 +482,7 @@ class DailyRecordServiceTest {
     void 존재하지_않는_기록은_삭제x() {
         Long recordId = 999L;
 
-        when(dailyRecordRepository.findById(recordId))
+        when(dailyRecordRepository.findOwnedByIdForUpdate(recordId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -454,7 +496,7 @@ class DailyRecordServiceTest {
         );
 
         verify(dailyRecordRepository, times(1))
-                .findById(recordId);
+                .findOwnedByIdForUpdate(recordId, 1L);
         verify(dailyRecordRepository, never())
                 .delete(any(DailyRecord.class));
     }
@@ -468,7 +510,7 @@ class DailyRecordServiceTest {
         DailyRecord firstRecord = mock(DailyRecord.class);
         DailyRecord secondRecord = mock(DailyRecord.class);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
         when(firstRecord.getId()).thenReturn(1L);
@@ -497,7 +539,7 @@ class DailyRecordServiceTest {
         assertEquals(LocalDate.of(2026, 9, 20), responses.get(1).recordDate());
 
         verify(categoryRepository, times(1))
-                .findByIdAndDeletedAtIsNull(categoryId);
+                .findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L);
         verify(dailyRecordRepository, times(1))
                 .findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
                         categoryId,
@@ -510,7 +552,7 @@ class DailyRecordServiceTest {
     void 존재하지_않는_카테고리의_월별조회는_실패한다() {
         Long categoryId = 999L;
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.empty());
 
         BusinessException exception = assertThrows(
@@ -524,7 +566,7 @@ class DailyRecordServiceTest {
         );
 
         verify(categoryRepository, times(1))
-                .findByIdAndDeletedAtIsNull(categoryId);
+                .findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L);
         verify(dailyRecordRepository, never())
                 .findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
                         anyLong(),
@@ -540,7 +582,7 @@ class DailyRecordServiceTest {
         LocalDate startDate = LocalDate.of(2028, 2, 1);
         LocalDate endDate = LocalDate.of(2028, 2, 29);
 
-        when(categoryRepository.findByIdAndDeletedAtIsNull(categoryId))
+        when(categoryRepository.findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L))
                 .thenReturn(Optional.of(category));
         when(dailyRecordRepository
                 .findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
@@ -556,7 +598,7 @@ class DailyRecordServiceTest {
         assertTrue(responses.isEmpty());
 
         verify(categoryRepository, times(1))
-                .findByIdAndDeletedAtIsNull(categoryId);
+                .findByIdAndOwnerIdAndDeletedAtIsNull(categoryId, 1L);
         verify(dailyRecordRepository, times(1))
                 .findAllByCategoryIdAndRecordDateBetweenOrderByRecordDateAsc(
                         categoryId,

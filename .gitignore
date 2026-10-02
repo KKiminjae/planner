@@ -37,3 +37,24 @@ out/
 .vscode/
 
 .env
+.env.*
+!.env.example
+
+# Runtime credentials, private keys and database backups
+auth.env
+alerts.env
+aws.credentials
+credentials
+.aws/
+.ssh/
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+id_rsa
+id_ed25519
+*.sql.gz
+*.sql.gz.sha256
+__pycache__/
+*.py[cod]

@@ -1,0 +1,31 @@
+[Unit]
+Description=Photo Calendar API
+After=network-online.target docker.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/photo-calendar
+EnvironmentFile=/home/ubuntu/photo-calendar/.env
+EnvironmentFile=/home/ubuntu/photo-calendar/auth.env
+Environment=AWS_PROFILE=photo-calendar
+Environment=AWS_SHARED_CREDENTIALS_FILE=/home/ubuntu/photo-calendar/aws.credentials
+Environment=AWS_REGION=ap-northeast-2
+Environment=PHOTO_S3_BUCKET=photo-calendar-mj-20261001-a7
+Environment=PHOTO_STORAGE_ENABLED=true
+Environment=SERVER_ADDRESS=127.0.0.1
+Environment=SESSION_COOKIE_SECURE=true
+Environment=SERVER_FORWARD_HEADERS_STRATEGY=framework
+Environment=TZ=UTC
+ExecStart=/usr/bin/java -Duser.timezone=UTC -Xms128m -Xmx512m -XX:MaxMetaspaceSize=192m -jar /home/ubuntu/photo-calendar/photo_calendar-0.0.1-SNAPSHOT.jar
+Restart=on-failure
+RestartSec=10
+MemoryMax=850M
+NoNewPrivileges=true
+PrivateTmp=true
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

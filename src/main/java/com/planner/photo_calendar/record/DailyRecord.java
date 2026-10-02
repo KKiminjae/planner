@@ -6,6 +6,7 @@ import lombok.Getter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.planner.photo_calendar.common.time.ApplicationTime;
 import java.time.LocalTime;
 
 @Entity
@@ -55,13 +56,18 @@ public class DailyRecord {
         this.recordTime = recordTime;
         this.memo = memo;
         this.imageKey = imageKey;
-        this.createdAt = LocalDateTime.now();
-        this.updatedAt = LocalDateTime.now();
+        this.createdAt = ApplicationTime.nowUtc();
+        this.updatedAt = ApplicationTime.nowUtc();
+    }
+
+    public void changeImage(String imageKey) {
+        this.imageKey = imageKey;
+        this.updatedAt = ApplicationTime.nowUtc();
     }
 
     public void update(LocalTime recordTime, String memo){
         this.recordTime = recordTime;
         this.memo = memo;
-        this.updatedAt = LocalDateTime.now();
+        this.updatedAt = ApplicationTime.nowUtc();
     }
 }

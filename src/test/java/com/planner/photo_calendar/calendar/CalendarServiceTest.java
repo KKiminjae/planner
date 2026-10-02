@@ -5,6 +5,8 @@ import com.planner.photo_calendar.category.CategoryRepository;
 import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.BeforeEach;
+import com.planner.photo_calendar.auth.CurrentOwner;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -16,6 +18,7 @@ import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -32,18 +35,26 @@ class CalendarServiceTest {
     @Mock
     private CompletionHistoryRepository completionHistoryRepository;
 
+    @Mock
+    private CurrentOwner currentOwner;
+
+    @BeforeEach
+    void 로그인_소유자를_설정한다() {
+        org.mockito.Mockito.lenient().when(currentOwner.id()).thenReturn(1L);
+    }
+
     @InjectMocks
     private CalendarService calendarService;
 
     @Test
     void 해당_월의_모든_날짜별_통합현황을_반환한다() {
-        when(categoryRepository.countActiveCategoriesAt(
+        when(categoryRepository.countActiveCategoriesByOwnerAt(eq(1L),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).thenReturn(3L);
-        when(dailyRecordRepository.countByRecordDate(any(LocalDate.class)))
+        when(dailyRecordRepository.countByRecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L)))
                 .thenReturn(2L);
-        when(completionHistoryRepository.countById_RecordDate(any(LocalDate.class)))
+        when(completionHistoryRepository.countById_RecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L)))
                 .thenReturn(0L);
 
         List<IntegratedCalendarResponse> responses =
@@ -55,29 +66,29 @@ class CalendarServiceTest {
         assertEquals(3, responses.get(0).totalCount());
         assertEquals(LocalDate.of(2026, 9, 30), responses.get(29).date());
 
-        verify(categoryRepository, times(30)).countActiveCategoriesAt(
+        verify(categoryRepository, times(30)).countActiveCategoriesByOwnerAt(eq(1L),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         );
         verify(dailyRecordRepository, times(30))
-                .countByRecordDate(any(LocalDate.class));
+                .countByRecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L));
         verify(completionHistoryRepository, times(30))
-                .countById_RecordDate(any(LocalDate.class));
+                .countById_RecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L));
     }
 
     @Test
     void 현재기록과_삭제된_카테고리의_완료이력을_합산한다() {
         LocalDate targetDate = LocalDate.of(2026, 9, 15);
 
-        when(categoryRepository.countActiveCategoriesAt(
+        when(categoryRepository.countActiveCategoriesByOwnerAt(eq(1L),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class)
         )).thenReturn(4L);
-        when(dailyRecordRepository.countByRecordDate(any(LocalDate.class)))
+        when(dailyRecordRepository.countByRecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L)))
                 .thenAnswer(invocation ->
                         targetDate.equals(invocation.getArgument(0)) ? 2L : 0L
                 );
-        when(completionHistoryRepository.countById_RecordDate(any(LocalDate.class)))
+        when(completionHistoryRepository.countById_RecordDateAndCategoryOwnerId(any(LocalDate.class), eq(1L)))
                 .thenAnswer(invocation ->
                         targetDate.equals(invocation.getArgument(0)) ? 1L : 0L
                 );

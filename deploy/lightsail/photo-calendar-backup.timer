@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Photo Calendar database backup
+
+[Timer]
+OnCalendar=*-*-* 03:30:00 Asia/Seoul
+Persistent=true
+RandomizedDelaySec=5min
+Unit=photo-calendar-backup.service
+
+[Install]
+WantedBy=timers.target

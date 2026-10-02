@@ -5,6 +5,8 @@ import com.planner.photo_calendar.category.CategoryRepository;
 import com.planner.photo_calendar.completionhistory.CompletionHistoryRepository;
 import com.planner.photo_calendar.record.DailyRecordRepository;
 import lombok.RequiredArgsConstructor;
+import com.planner.photo_calendar.auth.CurrentOwner;
+import com.planner.photo_calendar.common.time.ApplicationTime;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,6 +19,7 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class CalendarService {
+    private final CurrentOwner currentOwner;
     private final CategoryRepository categoryRepository;
 
     private final DailyRecordRepository dailyRecordRepository;
@@ -36,14 +39,14 @@ public class CalendarService {
         List<IntegratedCalendarResponse> response = new ArrayList<>();
 
         while (!startDate.isAfter(endDate)){
-            LocalDateTime startOfDay = startDate.atStartOfDay();
-            LocalDateTime nextDay = startDate.plusDays(1).atStartOfDay();
+            LocalDateTime startOfDay = ApplicationTime.startOfDayUtc(startDate);
+            LocalDateTime nextDay = ApplicationTime.startOfDayUtc(startDate.plusDays(1));
 
-            long totalCount = categoryRepository.countActiveCategoriesAt(startOfDay, nextDay);
+            long totalCount = categoryRepository.countActiveCategoriesByOwnerAt(currentOwner.id(), startOfDay, nextDay);
 
-            long currentRecordCount = dailyRecordRepository.countByRecordDate(startDate);
+            long currentRecordCount = dailyRecordRepository.countByRecordDateAndCategoryOwnerId(startDate, currentOwner.id());
 
-            long historyCount = completionHistoryRepository.countById_RecordDate(startDate);
+            long historyCount = completionHistoryRepository.countById_RecordDateAndCategoryOwnerId(startDate, currentOwner.id());
 
             long completedCount = currentRecordCount + historyCount;
 

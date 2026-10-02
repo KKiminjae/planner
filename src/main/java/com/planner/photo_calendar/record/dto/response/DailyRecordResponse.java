@@ -1,7 +1,6 @@
 package com.planner.photo_calendar.record.dto.response;
 
 import com.planner.photo_calendar.record.DailyRecord;
-import com.planner.photo_calendar.record.dto.request.DailyRecordCreateRequest;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -13,7 +12,7 @@ public record DailyRecordResponse (
         LocalDate recordDate,
         LocalTime recordTime,
         String memo,
-        String imageUrl
+        String imageKey
 ) {
     public static DailyRecordResponse from(DailyRecord record){
         return new DailyRecordResponse(

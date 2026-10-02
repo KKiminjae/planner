@@ -1,5 +1,6 @@
 package com.planner.photo_calendar.common.exception;
 
+import com.planner.photo_calendar.category.CategoryService;
 import com.planner.photo_calendar.record.DailyRecordController;
 import com.planner.photo_calendar.record.DailyRecordService;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,7 +81,7 @@ class GlobalExceptionHandlerTest {
 
     @Test
     void invalidMonthAndYearReturn400() throws Exception {
-        var categoryService = mock(com.planner.photo_calendar.category.CategoryService.class);
+        CategoryService categoryService = mock(CategoryService.class);
         MockMvc categoryMvc = MockMvcBuilders.standaloneSetup(
                 new com.planner.photo_calendar.category.CategoryController(categoryService, service))
                 .setControllerAdvice(new GlobalExceptionHandler()).build();
@@ -99,7 +100,7 @@ class GlobalExceptionHandlerTest {
         doThrow(new BusinessException(ErrorCode.RECORD_BEFORE_CATEGORY_CREATION)).when(service).create(any());
         mvc.perform(post("/api/records").contentType("application/json").content(validRequest()))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("RECORD_BEFORE_CATEGORY_CREATION"));
-        var categoryService = mock(com.planner.photo_calendar.category.CategoryService.class);
+        CategoryService categoryService = mock(CategoryService.class);
         doThrow(new BusinessException(ErrorCode.INVALID_CATEGORY_ORDER)).when(categoryService).reorder(any());
         MockMvc categoryMvc = MockMvcBuilders.standaloneSetup(
                 new com.planner.photo_calendar.category.CategoryController(categoryService, service))

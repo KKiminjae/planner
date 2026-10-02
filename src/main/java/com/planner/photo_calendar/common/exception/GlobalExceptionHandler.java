@@ -60,6 +60,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleUnexpected(exception);
     }
 
+    @Override
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(
+            org.springframework.web.multipart.MaxUploadSizeExceededException exception,
+            HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        return handleExceptionInternal(exception, ErrorResponse.from(ErrorCode.IMAGE_TOO_LARGE),
+                headers, status, request);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Object> handleUnexpected(Exception exception) {
         log.error("Unexpected request failure", exception);

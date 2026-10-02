@@ -1,0 +1,9 @@
+[Unit]
+Description=Photo Calendar final backup failure email
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/home/ubuntu/photo-calendar/alerts.env
+ExecStart=/usr/bin/python3 /usr/local/lib/photo-calendar/notify-operation.py
+UMask=0077
+TimeoutStartSec=60

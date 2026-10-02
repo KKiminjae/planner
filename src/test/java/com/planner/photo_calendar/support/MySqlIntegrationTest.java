@@ -9,6 +9,19 @@ import org.testcontainers.mysql.MySQLContainer;
 @SpringBootTest
 @Transactional
 public abstract class MySqlIntegrationTest {
+    @org.junit.jupiter.api.BeforeEach
+    void 기본_소유자로_인증한다() {
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        new com.planner.photo_calendar.auth.OwnerPrincipal(1L, "owner", ""), null,
+                        org.springframework.security.core.authority.AuthorityUtils.createAuthorityList("ROLE_OWNER")));
+    }
+
+    @org.junit.jupiter.api.AfterEach
+    void 인증을_정리한다() {
+        org.springframework.security.core.context.SecurityContextHolder.clearContext();
+    }
+
     private static final MySQLContainer MYSQL = new MySQLContainer("mysql:8.4");
 
     static {
