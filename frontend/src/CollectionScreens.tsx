@@ -45,7 +45,7 @@ function IntegratedMonth({ year, month, today, onExpired, onChoose }: { year: nu
   }, [visible, year, month, attempt, onExpired]);
   const byDate = new Map(data?.map(day => [day.date, day]));
   return <section ref={element} id={`integrated-${year}-${month}`} className="integrated-month" aria-label={`${year}년 ${month}월 통합 기록`}>
-    <h2><button className="month-title" onClick={onChoose}>{year}년 {month}월⌄</button></h2>
+    <h2><button className="month-title" onClick={onChoose}>{year}년 {month}월</button></h2>
     <div className="full-weekdays" aria-hidden="true">{['일','월','화','수','목','금','토'].map(day => <span key={day}>{day}</span>)}</div>
     {error && <div className="month-error"><p role="alert">월간 기록을 불러오지 못했어요.</p><button className="primary" onClick={() => setAttempt(v => v+1)}>다시 시도</button></div>}
     {!data && !error && <p className="sr-only" role="status">{year}년 {month}월 기록을 불러오는 중이에요.</p>}
