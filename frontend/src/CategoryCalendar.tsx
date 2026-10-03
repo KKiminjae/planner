@@ -37,7 +37,7 @@ function Month({ category, year, month, today, onExpired, onChoose }: { category
   }, [visible, category.id, year, month, attempt, onExpired]);
   const byDate = new Map(records?.map(record => [record.recordDate, record]));
   return <section ref={element} id={`month-${year}-${month}`} className="full-month" aria-label={`${year}년 ${month}월`}>
-    <h2><button className="month-title" onClick={onChoose}>{year}년 {month}월⌄</button></h2>
+    <h2><button className="month-title" onClick={onChoose}>{year}년 {month}월</button></h2>
     <div className="full-weekdays" aria-hidden="true">{weekdays.map(day => <span key={day}>{day}</span>)}</div>
     {error && <div className="month-error"><p role="alert">기록을 불러오지 못했어요.</p><button className="primary" onClick={() => setAttempt(v => v + 1)}>다시 시도</button></div>}
     {!records && !error && <span className="sr-only" role="status">{year}년 {month}월 기록을 불러오는 중이에요.</span>}

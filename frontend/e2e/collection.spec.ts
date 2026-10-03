@@ -56,7 +56,7 @@ test('historical denominators, daily grid, chronological feed and detail return 
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   await page.screenshot({path:testInfo.outputPath('integrated.png')});
   await day.click();
-  await expect(page.getByRole('heading',{name:'일간 기록 모아보기'})).toBeVisible();
+  await expect(page.getByRole('heading',{name:'모아보기'})).toBeVisible();
   const cards = page.locator('.daily-record-card');
   await expect(cards).toHaveCount(8);
   await expect(page.getByRole('link',{name:'독서, 기록 없음, 기록 작성'})).toBeVisible();
@@ -71,7 +71,7 @@ test('historical denominators, daily grid, chronological feed and detail return 
   await page.screenshot({path:testInfo.outputPath('daily-grid.png'),fullPage:true});
   await page.getByRole('link',{name:'아침기록, 08:30 기록 보기'}).click();
   await expect(page.getByRole('heading',{name:'상세 기록'})).toBeVisible();
-  await page.getByRole('link',{name:'일간 기록 모아보기로 돌아가기'}).click();
+  await page.getByRole('link',{name:'모아보기로 돌아가기'}).click();
   await page.getByRole('link',{name:'피드보기',exact:true}).click();
   await expect(page.getByRole('heading',{name:'일간 피드',exact:true})).toBeVisible();
   await expect(page.locator('.feed-content time')).toHaveText(['08:30','12:10','18:00','19:00','20:10']);
@@ -92,7 +92,7 @@ test('month jump, today return, date picker and calendar month restoration', asy
   await page.getByRole('button',{name:'월 선택⌄'}).click();
   await page.getByLabel('이동할 월').selectOption('2025-02');
   await page.getByRole('button',{name:'이동',exact:true}).click();
-  await expect(page.getByRole('button',{name:'2025년 2월⌄',exact:true})).toBeInViewport();
+  await expect(page.getByRole('button',{name:'2025년 2월',exact:true})).toBeInViewport();
   await page.getByRole('button',{name:'오늘',exact:true}).click();
   await expect(page.locator('.integrated-day.is-today')).toBeInViewport();
   await page.getByRole('link',{name:'2026-10-02, 5/8 카테고리 완료',exact:true}).click();
@@ -101,7 +101,7 @@ test('month jump, today return, date picker and calendar month restoration', asy
   await page.getByRole('button',{name:'이동',exact:true}).click();
   await expect(page.getByRole('heading',{name:'이날의 카테고리가 없어요'})).toBeVisible();
   await page.getByRole('link',{name:'통합 캘린더로 돌아가기',exact:true}).click();
-  await expect(page.getByRole('button',{name:'2025년 2월⌄',exact:true})).toBeInViewport();
+  await expect(page.getByRole('button',{name:'2025년 2월',exact:true})).toBeInViewport();
 });
 
 test('failed monthly and daily reads retry without replacing data, expired session returns to login', async ({page}) => {
@@ -140,7 +140,7 @@ test('unrecorded categories remain visible on a day with no records, and a blank
   await page.getByLabel('메모',{exact:true}).fill('책을 읽었어요.');
   await page.getByRole('button',{name:'저장',exact:true}).click();
   await expect(page.getByRole('heading',{name:'상세 기록',exact:true})).toBeVisible();
-  await page.getByRole('link',{name:'일간 기록 모아보기로 돌아가기'}).click();
+  await page.getByRole('link',{name:'모아보기로 돌아가기'}).click();
   await expect(page.getByRole('link',{name:'독서, 21:00 기록 보기'})).toBeVisible();
   await expect(page.getByRole('link',{name:'독서, 기록 없음, 기록 작성'})).toHaveCount(0);
   await expect(page.locator('.daily-record-card')).toHaveCount(8);

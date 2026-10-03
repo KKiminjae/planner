@@ -128,12 +128,11 @@ function RecordForm({ categoryId, categoryName, date, record, onExpired, returnT
   const src = preview || (!removeImage ? photo.url : '');
   const hasPhoto = !!file || (!!record?.imageKey && !removeImage);
   return <main className="app record-page"><form onSubmit={save}>
-    <Header title={record ? '기록 수정' : '기록 작성'} href={record ? `#/records/${record.id}${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}` : returnTo ? `#${returnTo}` : `#/categories/${categoryId}`} backLabel={record ? '상세 기록으로 돌아가기' : returnTo ? '일간 기록 모아보기로 돌아가기' : undefined} busy={busy} action={<button className="record-save" disabled={busy} type="submit">{busy ? phase || '저장 중…' : '저장'}</button>}/>
+    <Header title={record ? '기록 수정' : '기록 작성'} href={record ? `#/records/${record.id}${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}` : returnTo ? `#${returnTo}` : `#/categories/${categoryId}`} backLabel={record ? '상세 기록으로 돌아가기' : returnTo ? '모아보기로 돌아가기' : undefined} busy={busy} action={<button className="record-save" disabled={busy} type="submit">{busy ? phase || '저장 중…' : '저장'}</button>}/>
     <p className="record-date"><time dateTime={date}>{date.replaceAll('-', '.')}</time></p><p className="record-category">{categoryName}</p>
     <div className="photo-picker">{src ? <img src={src} alt="선택한 기록 사진" onError={() => { if (preview) { setImageError('사진 미리보기를 표시할 수 없어요. 다른 사진을 선택해 주세요.'); } else photo.failed(); }}/>: <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="16" cy="8" r="1.5"/><path d="m3 17 6-7 5 6 3-3 4 5"/></svg>}
     <div className="photo-controls"><button type="button" className="record-save" onClick={() => input.current?.click()} disabled={busy}>{hasPhoto ? '사진 변경' : '사진 선택'}</button>{hasPhoto && <button type="button" className="photo-remove" disabled={busy} onClick={() => { setFile(null); uploadedKey.current = null; setRemoveImage(true); setImageError(''); }}>사진 제거</button>}</div></div>
     <input ref={input} className="sr-only" type="file" accept="image/jpeg,image/png" onChange={choose} aria-label="기록 사진 선택" disabled={busy}/>
-    <p className="photo-help">사진은 선택 사항 · JPEG/PNG · 5MB, 2천만 화소 이하</p>
     {photo.error && !file && !removeImage && <p className="muted" role="status">기존 사진을 표시하지 못했어요. 변경하지 않으면 그대로 유지됩니다.</p>}
     {imageError && <p className="error" role="alert">{imageError}</p>}
     <label className="record-label" htmlFor="record-time">기록 시간</label><input className="record-input" id="record-time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={busy}/>
@@ -164,8 +163,8 @@ export function RecordDetail({ id, onExpired, returnTo }: { id: number; onExpire
     finally { deletingRef.current = false; setDeleting(false); }
   }
   if (!record) return <RecordLoad title="상세 기록" error={error} retry={retry}/>;
-  return <main className="app record-page"><Header title="상세 기록" href={returnTo ? `#${returnTo}` : `#/categories/${record.categoryId}`} backLabel={returnTo ? returnTo.endsWith('/feed') ? '일간 피드로 돌아가기' : '일간 기록 모아보기로 돌아가기' : undefined} busy={deleting} action={<button className="record-menu-button" aria-label="기록 메뉴" aria-expanded={menu} onClick={() => setMenu(!menu)}>⋮</button>}/>
-    {menu && <div className="record-menu"><a href={`#/records/${id}/edit${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}`}>수정</a><button onClick={() => { setConfirm(true); setMenu(false); }}>삭제</button><button onClick={() => setMenu(false)}>닫기</button></div>}
+  return <main className="app record-page"><Header title="상세 기록" href={returnTo ? `#${returnTo}` : `#/categories/${record.categoryId}`} backLabel={returnTo ? returnTo.endsWith('/feed') ? '일간 피드로 돌아가기' : '모아보기로 돌아가기' : undefined} busy={deleting} action={<button className="record-menu-button" aria-label="기록 메뉴" aria-expanded={menu} onClick={() => setMenu(!menu)}>⋮</button>}/>
+    {menu && <div className="record-menu"><a href={`#/records/${id}/edit${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}`}>수정</a><button onClick={() => { setConfirm(true); setMenu(false); }}>삭제</button></div>}
     <p className="record-category">{record.categoryName} · <time dateTime={record.recordDate}>{record.recordDate.replaceAll('-', '.')}</time></p><h2 className="detail-time">{record.recordTime.slice(0,5)}</h2>
     {record.imageKey && (photo.url ? <div className="detail-photo"><img src={photo.url} alt={`${record.categoryName} 기록 사진`} onError={photo.failed}/><span>{record.recordTime.slice(0,5)}</span></div> : <p className="muted" role="status">{photo.error ? '사진을 불러오지 못했어요.' : '사진을 불러오는 중이에요.'}</p>)}
     <section className="detail-memo"><h2>메모</h2><p>{record.memo}</p></section>

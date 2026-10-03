@@ -23,9 +23,9 @@ test('main screen fits viewport and supports navigation and keyboard focus', asy
   expect(first!.y).toBe(second!.y);
   expect(second!.x).toBeGreaterThan(first!.x);
   await page.evaluate(() => document.fonts.ready);
-  expect(await page.evaluate(() => document.fonts.check('600 30px Pretendard', '나의 기록'))).toBe(true);
+  expect(await page.evaluate(() => document.fonts.check('600 22px Pretendard', '나의 기록'))).toBe(true);
   const title = page.getByRole('heading', { name: '나의 기록' });
-  await expect(title).toHaveCSS('font-size', '30px');
+  await expect(title).toHaveCSS('font-size', '22px');
   await expect(title).toHaveCSS('font-weight', '600');
   await expect(title).toHaveCSS('letter-spacing', '-0.6px');
   await page.screenshot({ path: testInfo.outputPath('home.png'), fullPage: true });

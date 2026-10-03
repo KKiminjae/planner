@@ -1,0 +1,73 @@
+# 화면·백엔드 통합 배포 준비
+
+2026-10-02: 로컬 검증 후 운영 반영 완료. 백엔드 `20261002T114553Z-837e8081`, 화면 `20261002T114553Z`.
+
+## 검증
+
+- 백엔드 전체 테스트 210개 통과.
+- 프론트 기능 테스트 11개 통과.
+- Chrome 모바일 세로·가로 및 PC 브라우저 테스트 50개 통과, 데스크톱 터치 전용 1개 제외.
+- 프론트 프로덕션 빌드와 백엔드 bootJar 성공.
+- 배포 묶음의 각 파일 SHA-256 및 압축 파일 내용 검증.
+- 로컬 Nginx 컨테이너에서 HTTPS 정적 화면·JavaScript 제공 및 격리된 모의 API 프록시 검증.
+- 실제 iPhone Safari 및 운영 로그인 검증은 배포 후 진행합니다.
+
+공개 정적 파일 전체 해시 및 API 응답 검증 완료. HTTP→HTTPS 301 확인. 실제 iPhone Safari 확인은 남아 있습니다.
+
+## 준비된 파일
+
+`build/release/photo-calendar-release.tar.gz`에는 backend.jar, frontend/, nginx-https.conf,
+manifest.json만 포함됩니다. 자격 증명·로컬 DB·테스트 데이터는 포함하지 않습니다.
+압축 파일 자체의 해시는 같은 디렉터리의 `.sha256` 파일에 있습니다.
+
+재생성 순서:
+
+```bash
+cd frontend
+npm run build
+cd ..
+./gradlew bootJar
+python3 scripts/package-release.py
+```
+
+## 운영 반영 절차
+
+1. 서버 앱·Nginx·DB·디스크 상태와 현재 Nginx 사이트 경로를 읽기 조회한다.
+2. 준비된 묶음을 서버 incoming 디렉터리에 업로드한다. 압축과 manifest 해시를 검증한다.
+3. 화면을 `/var/www/photo-calendar/releases/<release-id>/`에 배치한다.
+   디렉터리 755, 정적 파일 644로 Nginx가 읽을 수 있게 한다.
+4. 기존 `/var/www/photo-calendar/current` 대상과 적용 중인 Nginx 설정을 백업한다.
+5. 기존 `/usr/local/sbin/photo-calendar-deploy deploy`로 새 JAR를 반영한다.
+   기존 도구의 배포 전 DB/S3 백업·마이그레이션 비교·실패 시 JAR 복귀를 유지한다.
+   이번 변경에는 새 DB 마이그레이션이 없다. 운영 인증/AWS 설정은 유지한다.
+6. current 심볼릭 링크를 새 화면 디렉터리로 원자적으로 교체한다.
+   준비된 nginx-https.conf를 기존 사이트에 적용하고 `sudo nginx -t` 성공 후 reload한다.
+   설정 검증 실패 시 기존 설정과 링크로 복귀한다.
+7. 공개 HTTPS 루트·JS·CSS·폰트가 200인지, /api/auth/csrf가 JSON 200인지,
+   미인증 /api/auth/me가 401인지, HTTP가 HTTPS로 이동하는지 확인한다.
+8. 브라우저에서 로그인·날짜별 카테고리·사진 저장/수정·세션 유지 흐름을 확인한다.
+   운영 기록을 변경하는 검증은 별도 테스트 카테고리로 진행하고 정리한다.
+
+백엔드 교체 중 짧은 접속 중단과 세션 초기화가 발생한다.
+로컬 기록을 운영 DB로 이전하는 작업은 이 배포에 포함하지 않는다.
+
+## 복귀
+
+화면은 이전 current 링크와 백업 Nginx 설정으로 복귀 후 nginx -t/reload한다.
+첫 화면 배포라 이전 링크가 없다면 기존 API 전용 Nginx 설정으로 복귀한다.
+백엔드는 이번 배포 ID를 사용해 기존 배포 도구의 rollback 명령을 실행한다.
+DB 데이터는 덮어쓰지 않는다. 자세한 절차는 DEPLOY_RECOVERY.md를 참고한다.
+
+## 제공 방식
+
+화면과 /api는 같은 HTTPS origin이다. API 로그인 제한과 프록시 헤더를 유지한다.
+index.html은 no-cache, 해시가 포함된 assets는 장기 캐시, 폰트는 1일 캐시를 사용한다.
+없는 assets/fonts 요청은 404이며 API 요청은 화면 HTML로 대체하지 않는다.
+
+## 2026-10-03 화면 수정 배포
+
+- 화면 릴리스: `20261003T035955Z-ui`. 이전 화면: `20261002T115408Z-month-title`.
+- 제목·메인 간격·카테고리 달력·기록 작성 사진 비율·연핑크 입력/메모·모아보기 이름 반영.
+- 프론트 기능 테스트 11개 통과, 빌드 성공. 브라우저 41개 통과·1개 제외 후, 변경된 제목/화살표 기대값을 갱신한 9개를 순차 재검증해 모두 통과.
+- 공개 정적 파일 5개 SHA-256 일치, CSRF JSON 200 및 미인증 계정 조회 401 확인.
+- 화면 파일과 current 링크만 교체. 백엔드·운영 DB·Nginx 설정 변경 없음.

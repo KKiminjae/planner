@@ -39,7 +39,7 @@ test('category calendar supports dates, month jumps, category switching and annu
   await page.getByRole('button', { name: '월 선택⌄' }).click();
   await page.getByLabel('이동할 월').selectOption('2025-02');
   await page.getByRole('button', { name: '이동', exact: true }).click();
-  await expect(page.getByRole('button', { name: '2025년 2월⌄', exact: true })).toBeInViewport();
+  await expect(page.getByRole('button', { name: '2025년 2월', exact: true })).toBeInViewport();
   await page.getByRole('button', { name: '오늘', exact: true }).click();
   await expect(page.locator('.full-day.is-today')).toBeInViewport();
   await page.getByRole('navigation', { name: '카테고리 전환' }).getByRole('link', { name: '운동', exact: true }).click();

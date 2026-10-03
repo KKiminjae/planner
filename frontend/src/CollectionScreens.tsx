@@ -113,10 +113,10 @@ export function DailyCollection({ date, feed, onExpired }: { date: string; feed:
     });
     return () => { active = false; };
   }, [date,valid,onExpired,attempt]);
-  const title = feed ? '일간 피드' : '일간 기록 모아보기';
+  const title = feed ? '일간 피드' : '모아보기';
   const backHref = feed ? `#/daily/${date}` : `#/calendar?month=${date.slice(0,7)}`;
   function navigate(value: string) { if (allowedDate(value,today)) window.location.hash = `#/daily/${value}${feed ? '/feed' : ''}`; }
-  return <main className="app daily-page"><Header title={title} href={valid ? backHref : '#/calendar'} backLabel={feed ? '일간 기록 모아보기로 돌아가기' : '통합 캘린더로 돌아가기'} action={!feed && valid ? <a className="pink-button" href={`#/daily/${date}/feed`}>피드보기</a> : undefined}/>
+  return <main className="app daily-page"><Header title={title} href={valid ? backHref : '#/calendar'} backLabel={feed ? '모아보기로 돌아가기' : '통합 캘린더로 돌아가기'} action={!feed && valid ? <a className="pink-button" href={`#/daily/${date}/feed`}>피드보기</a> : undefined}/>
     {!valid ? <section className="empty-state"><p role="alert">캘린더에서 최근 2년 이내의 날짜를 선택해 주세요.</p><a className="primary" href="#/calendar">통합 캘린더로 돌아가기</a></section> : <>
     <div className="daily-date-control">{feed && <button disabled={!allowedDate(dayShift(date,-1),today)} aria-label="이전 날짜" onClick={() => navigate(dayShift(date,-1))}>‹</button>}<button className="daily-date-toggle" aria-expanded={picker} onClick={() => setPicker(!picker)}><time dateTime={date}>{date.replaceAll('-','.')}</time>{!feed && '⌄'}</button>{feed && <button disabled={!allowedDate(dayShift(date,1),today)} aria-label="다음 날짜" onClick={() => navigate(dayShift(date,1))}>›</button>}</div>
     {picker && <form className="daily-date-picker" onSubmit={event => { event.preventDefault(); navigate(selected); setPicker(false); }}><label htmlFor="daily-date">이동할 날짜</label><input id="daily-date" type="date" min={`${Number(today.slice(0,4))-1}-01-01`} max={today} value={selected} onChange={event => setSelected(event.target.value)} required/><button className="primary">이동</button></form>}
