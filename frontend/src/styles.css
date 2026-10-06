@@ -126,7 +126,8 @@ a.category-card:hover { transform: translateY(-3px); box-shadow: 0 9px 24px colo
 .annual-header { display: flex; align-items: center; justify-content: space-between; gap: 6px; margin-bottom: 20px; }
 .annual-year-control { display: flex; flex: 1; min-width: 0; align-items: center; justify-content: center; gap: 6px; position: relative; left: 8px; }
 .annual-header h2 { font-size: 18px; margin: 0; text-align: center; }
-.annual-header button { border: 0; background: transparent; color: #6643b6; font-size: 28px; min-width: 44px; min-height: 44px; }
+.annual-header button { border: 0; background: transparent; color: #efb3ca; font-size: 28px; min-width: 44px; min-height: 44px; }
+.annual-year-control button:focus-visible { outline: none; }
 .annual-grid { display: grid; grid-template-columns: 20px repeat(12, minmax(0, 1fr)); gap: 4px; font-size: 10px; text-align: center; align-items: center; }
 .heat-row { display: contents; }
 .heat-cell { display: block; aspect-ratio: 1; border-radius: 4px; }

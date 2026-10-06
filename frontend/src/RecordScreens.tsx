@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react';
 import { api, ApiError, type DailyRecord } from './api';
 import { seoulToday } from './calendar';
+import { photoCaptureTime } from './photoTime';
 
 function Back({ href, disabled = false, label = '카테고리 캘린더로 돌아가기' }: { href: string; disabled?: boolean; label?: string }) {
   return <a className="calendar-back" href={disabled ? undefined : href} aria-disabled={disabled || undefined} aria-label={label}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 5-7 7 7 7"/></svg></a>;
@@ -88,23 +89,35 @@ function RecordForm({ categoryId, categoryName, date, record, onExpired, returnT
   const uploadedKey = useRef<string | null>(null);
   const saving = useRef(false);
   const input = useRef<HTMLInputElement>(null);
+  const selection = useRef(0);
+  const timeRevision = useRef(0);
+  const readingRef = useRef(false);
+  const [readingTime, setReadingTime] = useState(false);
+  useEffect(() => () => { selection.current++; }, []);
   const photo = usePhoto(record || null, onExpired);
   useEffect(() => {
     if (!file) { setPreview(''); return; }
     const url = URL.createObjectURL(file); setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
-  function choose(event: ChangeEvent<HTMLInputElement>) {
+  async function choose(event: ChangeEvent<HTMLInputElement>) {
     const selected = event.target.files?.[0]; event.target.value = '';
     if (!selected) return;
     setImageError('');
     if (!['image/jpeg', 'image/png'].includes(selected.type)) { setImageError('JPEG 또는 PNG 사진을 선택해 주세요.'); return; }
     if (selected.size > 20 * 1024 * 1024) { setImageError('사진은 20MB 이하로 선택해 주세요.'); return; }
+    const token = ++selection.current;
+    const revision = timeRevision.current;
+    readingRef.current = true; setReadingTime(true);
     setFile(selected); uploadedKey.current = null; setRemoveImage(false);
+    const capturedTime = await photoCaptureTime(selected);
+    if (selection.current !== token) return;
+    if (capturedTime && timeRevision.current === revision) setTime(capturedTime);
+    readingRef.current = false; setReadingTime(false);
   }
   async function save(event: FormEvent) {
     event.preventDefault();
-    if (saving.current) return;
+    if (saving.current || readingRef.current) return;
     if (!/^\d{2}:\d{2}$/.test(time)) { setError('기록 시간을 입력해 주세요.'); return; }
     saving.current = true; setBusy(true); setError('');
     let uploading = false;
@@ -127,14 +140,15 @@ function RecordForm({ categoryId, categoryName, date, record, onExpired, returnT
   const src = preview || (!removeImage ? photo.url : '');
   const hasPhoto = !!file || (!!record?.imageKey && !removeImage);
   return <main className="app record-page"><form onSubmit={save}>
-    <Header title={record ? '기록 수정' : '기록 작성'} href={record ? `#/records/${record.id}${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}` : returnTo ? `#${returnTo}` : `#/categories/${categoryId}`} backLabel={record ? '상세 기록으로 돌아가기' : returnTo ? '모아보기로 돌아가기' : undefined} busy={busy} action={<button className="record-save" disabled={busy} type="submit">{busy ? phase || '저장 중…' : '저장'}</button>}/>
+    <Header title={record ? '기록 수정' : '기록 작성'} href={record ? `#/records/${record.id}${returnTo ? `?from=${encodeURIComponent(returnTo)}` : ''}` : returnTo ? `#${returnTo}` : `#/categories/${categoryId}`} backLabel={record ? '상세 기록으로 돌아가기' : returnTo ? '모아보기로 돌아가기' : undefined} busy={busy} action={<button className="record-save" disabled={busy || readingTime} type="submit">{busy ? phase || '저장 중…' : '저장'}</button>}/>
     <p className="record-date"><time dateTime={date}>{date.replaceAll('-', '.')}</time></p><p className="record-category">{categoryName}</p>
     <div className="photo-picker">{src ? <img src={src} alt="선택한 기록 사진" onError={() => { if (preview) { setImageError('사진 미리보기를 표시할 수 없어요. 다른 사진을 선택해 주세요.'); } else photo.failed(); }}/>: <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="16" cy="8" r="1.5"/><path d="m3 17 6-7 5 6 3-3 4 5"/></svg>}
-    <div className="photo-controls"><button type="button" className="record-save" onClick={() => input.current?.click()} disabled={busy}>{hasPhoto ? '사진 변경' : '사진 선택'}</button>{hasPhoto && <button type="button" className="photo-remove" disabled={busy} onClick={() => { setFile(null); uploadedKey.current = null; setRemoveImage(true); setImageError(''); }}>사진 제거</button>}</div></div>
+    <div className="photo-controls"><button type="button" className="record-save" onClick={() => input.current?.click()} disabled={busy}>{hasPhoto ? '사진 변경' : '사진 선택'}</button>{hasPhoto && <button type="button" className="photo-remove" disabled={busy} onClick={() => { selection.current++; readingRef.current = false; setReadingTime(false); setFile(null); uploadedKey.current = null; setRemoveImage(true); setImageError(''); }}>사진 제거</button>}</div></div>
     <input ref={input} className="sr-only" type="file" accept="image/jpeg,image/png" onChange={choose} aria-label="기록 사진 선택" disabled={busy}/>
     {photo.error && !file && !removeImage && <p className="muted" role="status">기존 사진을 표시하지 못했어요. 변경하지 않으면 그대로 유지됩니다.</p>}
     {imageError && <p className="error" role="alert">{imageError}</p>}
-    <label className="record-label" htmlFor="record-time">기록 시간</label><input className="record-input" id="record-time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={busy}/>
+    {readingTime && <p className="muted" role="status">사진 촬영 시간을 확인하고 있어요.</p>}
+    <label className="record-label" htmlFor="record-time">기록 시간</label><input className="record-input" id="record-time" type="time" value={time} onChange={event => { timeRevision.current++; setTime(event.target.value); }} required disabled={busy}/>
     <label className="record-label" htmlFor="record-memo">메모</label><textarea className="record-input record-memo" id="record-memo" placeholder="오늘의 기록을 남겨보세요." value={memo} onChange={event => setMemo(event.target.value)} disabled={busy}/>
     {error && <p className="error" role="alert">{error}</p>}{busy && <p className="sr-only" role="status">{phase}</p>}
   </form></main>;

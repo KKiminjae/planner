@@ -97,7 +97,7 @@ test('month jump, today return, date picker and calendar month restoration', asy
   await page.getByRole('button',{name:'오늘',exact:true}).click();
   await expect(page.locator('.integrated-day.is-today')).toBeInViewport();
   await page.getByRole('link',{name:'2026-10-02, 5/8 카테고리 완료',exact:true}).click();
-  await page.getByRole('button',{name:'2026.10.02⌄'}).click();
+  await page.getByRole('button',{name:'2026.10.02',exact:true}).click();
   await page.getByLabel('이동할 날짜').fill('2025-02-01');
   await page.getByRole('button',{name:'이동',exact:true}).click();
   await expect(page.getByRole('heading',{name:'이날의 카테고리가 없어요'})).toBeVisible();

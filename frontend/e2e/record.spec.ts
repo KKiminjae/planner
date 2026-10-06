@@ -135,3 +135,37 @@ test('create a record for a past date', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '상세 기록' })).toBeVisible();
   expect(state.writes[0].body.recordDate).toBe('2025-02-01');
 });
+
+test('photo capture time fills the clock, remains editable and missing metadata preserves it', async ({ page }) => {
+  const state = await setup(page);
+  await page.goto('/#/categories/1/new?date=2026-10-02');
+  const clock = page.getByLabel('기록 시간', { exact: true });
+  await expect(clock).toHaveValue('12:00');
+  const jpeg = await page.evaluate(() => {
+    const canvas = document.createElement('canvas'); canvas.width = 2; canvas.height = 2;
+    return canvas.toDataURL('image/jpeg').split(',')[1];
+  });
+  const tiff = Buffer.alloc(64);
+  tiff.set([0x49,0x49,42,0,8,0,0,0]);
+  tiff.writeUInt16LE(1,8); tiff.writeUInt16LE(0x8769,10); tiff.writeUInt16LE(4,12);
+  tiff.writeUInt32LE(1,14); tiff.writeUInt32LE(26,18);
+  tiff.writeUInt16LE(1,26); tiff.writeUInt16LE(0x9003,28); tiff.writeUInt16LE(2,30);
+  tiff.writeUInt32LE(20,32); tiff.writeUInt32LE(44,36);
+  tiff.write('2026:10:01 23:47:12',44);
+  const original = Buffer.from(jpeg,'base64');
+  const photo = Buffer.concat([original.subarray(0,2), Buffer.from([0xff,0xe1,0,72,69,120,105,102,0,0]),tiff,original.subarray(2)]);
+  await page.getByLabel('기록 사진 선택', { exact:true }).setInputFiles({name:'capture.jpg',mimeType:'image/jpeg',buffer:photo});
+  await expect(clock).toHaveValue('23:47');
+  await expect(page.locator('.record-date')).toHaveText('2026.10.02');
+  await clock.fill('09:15');
+  await page.getByLabel('기록 사진 선택', { exact:true }).setInputFiles({name:'no-exif.jpg',mimeType:'image/jpeg',buffer:original});
+  await expect(page.getByRole('status')).toHaveCount(0);
+  await expect(clock).toHaveValue('09:15');
+  await page.getByRole('button',{name:'저장',exact:true}).click();
+  await expect(page.getByRole('heading',{name:'상세 기록'})).toBeVisible();
+  expect(state.writes[0].body).toMatchObject({recordDate:'2026-10-02',recordTime:'09:15'});
+  await page.goto('/#/records/11/edit');
+  await expect(clock).toHaveValue('09:15');
+  await page.getByLabel('기록 사진 선택', { exact:true }).setInputFiles({name:'replacement.jpg',mimeType:'image/jpeg',buffer:photo});
+  await expect(clock).toHaveValue('23:47');
+});
