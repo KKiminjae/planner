@@ -51,8 +51,15 @@ class PhotoServiceTest {
     }
 
     @Test
-    void 파일이_5MB를_초과하면_저장하지_않는다() {
-        assertThatThrownBy(() -> service.upload(new MockMultipartFile("file", new byte[5 * 1024 * 1024 + 1])))
+    void 파일이_정확히_20MB이면_저장한다() throws Exception {
+        byte[] bytes = java.util.Arrays.copyOf(image("png"), 20 * 1024 * 1024);
+        PhotoUploadResponse response = service.upload(new MockMultipartFile("file", bytes));
+        verify(storage).upload(response.imageKey(), bytes, "image/png");
+    }
+
+    @Test
+    void 파일이_20MB를_초과하면_저장하지_않는다() {
+        assertThatThrownBy(() -> service.upload(new MockMultipartFile("file", new byte[20 * 1024 * 1024 + 1])))
                 .isInstanceOfSatisfying(BusinessException.class,
                         exception -> assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.IMAGE_TOO_LARGE));
         verifyNoInteractions(storage);
@@ -68,11 +75,20 @@ class PhotoServiceTest {
     }
 
     @Test
-    void 해상도가_2천만_화소를_초과하면_디코딩_전에_거부한다() throws Exception {
+    void 아이폰_24MP_해상도_사진은_저장한다() throws Exception {
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        ImageIO.write(new BufferedImage(4284, 5712, BufferedImage.TYPE_INT_RGB), "jpeg", output);
+        byte[] bytes = output.toByteArray();
+        PhotoUploadResponse response = service.upload(new MockMultipartFile("file", "iphone.jpg", "image/jpeg", bytes));
+        verify(storage).upload(response.imageKey(), bytes, "image/jpeg");
+    }
+
+    @Test
+    void 해상도가_5천만_화소를_초과하면_디코딩_전에_거부한다() throws Exception {
         byte[] bytes = image("png");
         java.nio.ByteBuffer header = java.nio.ByteBuffer.wrap(bytes);
-        header.putInt(16, 5000);
-        header.putInt(20, 4001);
+        header.putInt(16, 10000);
+        header.putInt(20, 5001);
         java.util.zip.CRC32 checksum = new java.util.zip.CRC32();
         checksum.update(bytes, 12, 17);
         header.putInt(29, (int) checksum.getValue());

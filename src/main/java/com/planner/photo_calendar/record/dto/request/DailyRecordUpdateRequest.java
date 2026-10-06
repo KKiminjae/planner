@@ -1,6 +1,5 @@
 package com.planner.photo_calendar.record.dto.request;
 
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.AssertTrue;
@@ -11,13 +10,16 @@ public record DailyRecordUpdateRequest(
         @NotNull
         LocalTime recordTime,
 
-        @NotBlank
         String memo,
 
         @Pattern(regexp = "photos/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(png|jpeg)")
         String imageKey,
         Boolean removeImage
 ) {
+    public DailyRecordUpdateRequest {
+        memo = memo == null ? "" : memo;
+    }
+
     public DailyRecordUpdateRequest(LocalTime recordTime, String memo) {
         this(recordTime, memo, null, null);
     }

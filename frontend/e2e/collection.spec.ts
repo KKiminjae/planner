@@ -58,10 +58,11 @@ test('historical denominators, daily grid, chronological feed and detail return 
   await day.click();
   await expect(page.getByRole('heading',{name:'모아보기'})).toBeVisible();
   const cards = page.locator('.daily-record-card');
-  await expect(cards).toHaveCount(8);
+  await expect(cards).toHaveCount(7);
   await expect(page.getByRole('link',{name:'독서, 기록 없음, 기록 작성'})).toBeVisible();
   await expect(page.getByRole('link',{name:/명상/})).toHaveCount(0);
-  await expect(page.getByLabel('명상, 삭제된 카테고리')).toBeVisible();
+  await expect(page.getByLabel('명상, 삭제된 카테고리')).toHaveCount(0);
+  await expect(page.getByRole('heading', {name:'명상', exact:true})).toHaveCount(0);
   const first = await cards.nth(0).boundingBox();
   const fourth = await cards.nth(3).boundingBox();
   expect(fourth!.x).toBe(first!.x);
@@ -119,7 +120,7 @@ test('failed monthly and daily reads retry without replacing data, expired sessi
   await expect(page.getByRole('alert')).toBeVisible();
   dailyReady = true;
   await page.getByRole('button',{name:'다시 시도'}).click();
-  await expect(page.locator('.daily-record-card')).toHaveCount(8);
+  await expect(page.locator('.daily-record-card')).toHaveCount(7);
   await page.route('**/api/records?date=2026-10-02', route => route.fulfill({status:401,json:{}}));
   await page.reload();
   await expect(page.getByText('세션이 만료됐어요. 다시 로그인해 주세요.')).toBeVisible();
@@ -129,7 +130,7 @@ test('failed monthly and daily reads retry without replacing data, expired sessi
 test('unrecorded categories remain visible on a day with no records, and a blank card creates a record', async ({page}) => {
   await setup(page);
   await page.goto('/#/daily/2026-10-01');
-  await expect(page.locator('.daily-record-card')).toHaveCount(8);
+  await expect(page.locator('.daily-record-card')).toHaveCount(7);
   await expect(page.getByRole('link',{name:'독서, 기록 없음, 기록 작성'})).toHaveAttribute('href', /date=2026-10-01/);
   await expect(page.locator('.daily-record-image time')).toHaveCount(0);
   await page.goto('/#/daily/2026-10-02');
@@ -143,5 +144,5 @@ test('unrecorded categories remain visible on a day with no records, and a blank
   await page.getByRole('link',{name:'모아보기로 돌아가기'}).click();
   await expect(page.getByRole('link',{name:'독서, 21:00 기록 보기'})).toBeVisible();
   await expect(page.getByRole('link',{name:'독서, 기록 없음, 기록 작성'})).toHaveCount(0);
-  await expect(page.locator('.daily-record-card')).toHaveCount(8);
+  await expect(page.locator('.daily-record-card')).toHaveCount(7);
 });

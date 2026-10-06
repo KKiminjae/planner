@@ -22,22 +22,40 @@ public interface CategoryRepository extends JpaRepository<Category, Long> {
     List<Category> findAllByOwnerIdAndDeletedAtIsNullOrderByDisplayOrderAsc(Long ownerId);
     Optional<Category> findByIdAndOwnerIdAndDeletedAtIsNull(Long id, Long ownerId);
 
+    default List<Category> findActiveCategoriesByOwnerAt(Long ownerId, LocalDateTime startOfDay, LocalDateTime nextDay) {
+        return findCategoriesForDate(ownerId, startOfDay, nextDay,
+                com.planner.photo_calendar.common.time.ApplicationTime.calendarDate(startOfDay));
+    }
+
+    default long countActiveCategoriesByOwnerAt(Long ownerId, LocalDateTime startOfDay, LocalDateTime nextDay) {
+        return countCategoriesForDate(ownerId, startOfDay, nextDay,
+                com.planner.photo_calendar.common.time.ApplicationTime.calendarDate(startOfDay));
+    }
+
     @Query("""
             select c from Category c where c.ownerId = :ownerId
-              and c.createdAt < :nextDay and (c.deletedAt is null or c.deletedAt >= :startOfDay)
+              and (c.createdAt < :nextDay
+                   or exists (select r.id from DailyRecord r where r.category = c and r.recordDate = :recordDate)
+                   or exists (select h.id from CompletionHistory h where h.category = c and h.id.recordDate = :recordDate))
+              and (c.deletedAt is null or c.deletedAt >= :startOfDay)
             order by c.displayOrder, c.id
             """)
-    List<Category> findActiveCategoriesByOwnerAt(@Param("ownerId") Long ownerId,
-                                                @Param("startOfDay") LocalDateTime startOfDay,
-                                                @Param("nextDay") LocalDateTime nextDay);
+    List<Category> findCategoriesForDate(@Param("ownerId") Long ownerId,
+                                         @Param("startOfDay") LocalDateTime startOfDay,
+                                         @Param("nextDay") LocalDateTime nextDay,
+                                         @Param("recordDate") LocalDate recordDate);
 
     @Query("""
             select count(c) from Category c where c.ownerId = :ownerId
-              and c.createdAt < :nextDay and (c.deletedAt is null or c.deletedAt >= :startOfDay)
+              and (c.createdAt < :nextDay
+                   or exists (select r.id from DailyRecord r where r.category = c and r.recordDate = :recordDate)
+                   or exists (select h.id from CompletionHistory h where h.category = c and h.id.recordDate = :recordDate))
+              and (c.deletedAt is null or c.deletedAt >= :startOfDay)
             """)
-    long countActiveCategoriesByOwnerAt(@Param("ownerId") Long ownerId,
-                                        @Param("startOfDay") LocalDateTime startOfDay,
-                                        @Param("nextDay") LocalDateTime nextDay);
+    long countCategoriesForDate(@Param("ownerId") Long ownerId,
+                                @Param("startOfDay") LocalDateTime startOfDay,
+                                @Param("nextDay") LocalDateTime nextDay,
+                                @Param("recordDate") LocalDate recordDate);
 
     @Query("""
             SELECT COALESCE(MAX(c.displayOrder), 0)

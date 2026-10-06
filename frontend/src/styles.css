@@ -105,7 +105,7 @@ a.category-card:hover { transform: translateY(-3px); box-shadow: 0 9px 24px colo
 .category-page .full-day { aspect-ratio: 1 / 1.5; }
 .full-weekdays, .full-grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
 .full-weekdays { font-size: 12px; color: #938b9d; text-align: center; margin-bottom: 12px; }
-.full-weekdays span:first-child { color: #c5527c; }
+.full-weekdays span:last-child { color: #c5527c; }
 .full-day { position: relative; display: block; min-height: 58px; aspect-ratio: 1 / 1.45; background: #faf9fc; border: 1px solid #ece9f0; border-radius: 9px; overflow: hidden; }
 .full-day.blank { visibility: hidden; }
 .full-day.has-record { background: color-mix(in srgb, var(--category) 55%, white); color: #292431; }
@@ -203,7 +203,7 @@ button, input, textarea, select { font-family: inherit; }
 .integrated-day.future { color: #aaa5af; }
 .completion-badge { padding: 3px 5px; border-radius: 12px; background: #fce7ef; color: #a5446b; font-size: 10px; white-space: nowrap; }
 .completion-badge.complete { background: #efb3ca; color: #78324f; }
-.integrated-month .full-weekdays span:last-child { color: #4284cb; }
+.integrated-month .full-weekdays span:nth-child(6) { color: #4284cb; }
 .daily-page { padding-top: calc(24px + env(safe-area-inset-top, 0px)); }
 .daily-page .collection-header h1 { font-size: 20px; }
 .daily-date-control { display: flex; align-items: center; justify-content: center; gap: 8px; margin: 24px 0 32px; }

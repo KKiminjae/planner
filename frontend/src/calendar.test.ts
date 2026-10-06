@@ -13,12 +13,13 @@ describe('calendar dates', () => {
   });
   it('aligns September 2026 to Tuesday and pads the final week', () => {
     const grid = monthGrid(2026, 9);
-    expect(grid.slice(0, 4)).toEqual([null, null, 1, 2]);
+    expect(grid.slice(0, 4)).toEqual([null, 1, 2, 3]);
     expect(grid).toHaveLength(35);
     expect(grid.filter(day => day !== null)).toHaveLength(30);
   });
   it('handles months starting Sunday and six-week months', () => {
-    expect(monthGrid(2026, 2)[0]).toBe(1);
+    expect(monthGrid(2026, 2).slice(0, 7)).toEqual([null, null, null, null, null, null, 1]);
+    expect(monthGrid(2026, 6)[0]).toBe(1);
     expect(monthGrid(2026, 8)).toHaveLength(42);
   });
   it('counts unique valid record dates in only the selected month', () => {

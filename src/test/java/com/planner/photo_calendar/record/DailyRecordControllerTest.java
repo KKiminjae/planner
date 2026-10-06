@@ -80,15 +80,29 @@ class DailyRecordControllerTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"{}", "{\"memo\":null}", "{\"memo\":\"\"}", "{\"memo\":\" \"}"})
+    void 메모는_생성과_수정에서_선택사항이다(String memoJson) throws Exception {
+        String memoFields = memoJson.substring(1, memoJson.length() - 1);
+        String suffix = memoFields.isEmpty() ? "" : "," + memoFields;
+        mvc.perform(post("/api/records").contentType("application/json")
+                        .content("{\"categoryId\":7,\"recordDate\":\"2026-09-15\",\"recordTime\":\"09:30:00\"" + suffix + "}"))
+                .andExpect(status().isCreated());
+        mvc.perform(patch("/api/records/11").contentType("application/json")
+                        .content("{\"recordTime\":\"09:30:00\"" + suffix + "}"))
+                .andExpect(status().isOk());
+        String expectedMemo = memoJson.contains(" ") ? " " : "";
+        verify(service).create(new DailyRecordCreateRequest(7L, date, time, expectedMemo));
+        verify(service).update(11L, new DailyRecordUpdateRequest(time, expectedMemo));
+    }
+
+    @ParameterizedTest
     @ValueSource(strings = {
             "{}",
             "{\"recordDate\":\"2026-09-15\",\"recordTime\":\"09:30:00\",\"memo\":\"기록\"}",
             "{\"categoryId\":7,\"recordTime\":\"09:30:00\",\"memo\":\"기록\"}",
-            "{\"categoryId\":7,\"recordDate\":\"2026-09-15\",\"memo\":\"기록\"}",
-            "{\"categoryId\":7,\"recordDate\":\"2026-09-15\",\"recordTime\":\"09:30:00\"}",
-            "{\"categoryId\":7,\"recordDate\":\"2026-09-15\",\"recordTime\":\"09:30:00\",\"memo\":\" \"}"
+            "{\"categoryId\":7,\"recordDate\":\"2026-09-15\",\"memo\":\"기록\"}"
     })
-    void 기록_생성은_필수값이_없거나_메모가_공백이면_서비스_호출_없이_400을_반환한다(String body) throws Exception {
+    void 기록_생성은_필수값이_없으면_서비스_호출_없이_400을_반환한다(String body) throws Exception {
         mvc.perform(post("/api/records").contentType("application/json").content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))
@@ -97,9 +111,8 @@ class DailyRecordControllerTest {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"{}", "{\"memo\":\"기록\"}", "{\"recordTime\":\"09:30:00\"}",
-            "{\"recordTime\":\"09:30:00\",\"memo\":\" \"}"})
-    void 기록_수정은_필수값이_없거나_메모가_공백이면_서비스_호출_없이_400을_반환한다(String body) throws Exception {
+    @ValueSource(strings = {"{}", "{\"memo\":\"기록\"}"})
+    void 기록_수정은_필수값이_없으면_서비스_호출_없이_400을_반환한다(String body) throws Exception {
         mvc.perform(patch("/api/records/11").contentType("application/json").content(body))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDATION_FAILED"))

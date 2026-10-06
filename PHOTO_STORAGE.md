@@ -11,8 +11,8 @@
 `POST /api/photos`에서 multipart의 `file` 필드를 받아 사진을 S3에 저장하고
 201 상태와 `{ "imageKey": "photos/고유번호.png" }`를 반환합니다.
 JPEG와 PNG를 지원하며 실제 이미지 내용을 검사합니다.
-파일은 5MiB 이하, 2천만 화소 이하로 제한합니다. 원본 파일명 대신 UUID를 사용합니다.
-5MB 초과는 multipart 처리 단계에서도 거부됩니다.
+파일은 20MiB 이하, 5천만 화소 이하로 제한합니다. 원본 파일명 대신 UUID를 사용합니다.
+20MB 초과는 multipart 처리 단계에서도 거부됩니다.
 
 빈 파일·지원하지 않는 파일은 `INVALID_IMAGE`(400),
 크기·해상도 초과는 `IMAGE_TOO_LARGE`(413),

@@ -24,8 +24,8 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @ConditionalOnProperty(name = "photo.storage.enabled", havingValue = "true")
 public class PhotoService {
-    private static final long MAX_BYTES = 5 * 1024 * 1024;
-    private static final long MAX_PIXELS = 20_000_000;
+    private static final long MAX_BYTES = 20 * 1024 * 1024;
+    private static final long MAX_PIXELS = 50_000_000;
     private final CurrentOwner currentOwner;
     private final PhotoStorage storage;
     private final PhotoRepository repository;

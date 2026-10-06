@@ -13,7 +13,6 @@ function Header({ title, href, action, busy, backLabel }: { title: string; href:
 function message(cause: unknown, fallback: string) {
   if (!(cause instanceof ApiError)) return fallback;
   if (cause.code === 'DUPLICATE_DAILY_RECORD') return '이 날짜에는 이미 기록이 있어요. 캘린더에서 기존 기록을 확인해 주세요.';
-  if (cause.code === 'RECORD_BEFORE_CATEGORY_CREATION') return '카테고리를 만들기 전 날짜에는 기록할 수 없어요.';
   if (cause.status === 403) return '저장 권한을 확인하지 못했어요. 새로고침 후 다시 로그인해 주세요.';
   return cause.status >= 500 ? fallback : cause.message;
 }
@@ -100,13 +99,13 @@ function RecordForm({ categoryId, categoryName, date, record, onExpired, returnT
     if (!selected) return;
     setImageError('');
     if (!['image/jpeg', 'image/png'].includes(selected.type)) { setImageError('JPEG 또는 PNG 사진을 선택해 주세요.'); return; }
-    if (selected.size > 5 * 1024 * 1024) { setImageError('사진은 5MB 이하로 선택해 주세요.'); return; }
+    if (selected.size > 20 * 1024 * 1024) { setImageError('사진은 20MB 이하로 선택해 주세요.'); return; }
     setFile(selected); uploadedKey.current = null; setRemoveImage(false);
   }
   async function save(event: FormEvent) {
     event.preventDefault();
     if (saving.current) return;
-    if (!memo.trim() || !/^\d{2}:\d{2}$/.test(time)) { setError('기록 시간과 메모를 입력해 주세요.'); return; }
+    if (!/^\d{2}:\d{2}$/.test(time)) { setError('기록 시간을 입력해 주세요.'); return; }
     saving.current = true; setBusy(true); setError('');
     let uploading = false;
     try {
@@ -136,7 +135,7 @@ function RecordForm({ categoryId, categoryName, date, record, onExpired, returnT
     {photo.error && !file && !removeImage && <p className="muted" role="status">기존 사진을 표시하지 못했어요. 변경하지 않으면 그대로 유지됩니다.</p>}
     {imageError && <p className="error" role="alert">{imageError}</p>}
     <label className="record-label" htmlFor="record-time">기록 시간</label><input className="record-input" id="record-time" type="time" value={time} onChange={event => setTime(event.target.value)} required disabled={busy}/>
-    <label className="record-label" htmlFor="record-memo">메모</label><textarea className="record-input record-memo" id="record-memo" placeholder="오늘의 기록을 남겨보세요." value={memo} onChange={event => setMemo(event.target.value)} required disabled={busy}/>
+    <label className="record-label" htmlFor="record-memo">메모</label><textarea className="record-input record-memo" id="record-memo" placeholder="오늘의 기록을 남겨보세요." value={memo} onChange={event => setMemo(event.target.value)} disabled={busy}/>
     {error && <p className="error" role="alert">{error}</p>}{busy && <p className="sr-only" role="status">{phase}</p>}
   </form></main>;
 }

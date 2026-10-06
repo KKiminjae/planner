@@ -34,11 +34,6 @@ public class DailyRecordService {
                 .orElseThrow(() ->
                         new BusinessException(ErrorCode.CATEGORY_NOT_FOUND, "존재하지 않는 카테고리 입니다."));
 
-        LocalDate createdDate = ApplicationTime.calendarDate(category.getCreatedAt());
-
-        if(request.recordDate().isBefore(createdDate)){
-            throw new BusinessException(ErrorCode.RECORD_BEFORE_CATEGORY_CREATION, "카테고리 생성일 이전에는 기록할 수 없습니다.");
-        }
         if(request.recordDate().isAfter(applicationTime.today())){
             throw new BusinessException(ErrorCode.FUTURE_RECORD_NOT_ALLOWED, "미래 날짜에는 기록할 수 없습니다.");
         }

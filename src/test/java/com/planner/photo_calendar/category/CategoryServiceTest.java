@@ -50,7 +50,7 @@ class CategoryServiceTest {
     }
 
     @Test
-    void 날짜별_카테고리는_소유자와_한국시간_하루경계로_조회하고_삭제여부를_표시한다() {
+    void 과거_모아보기는_소유자와_한국시간_하루경계로_조회하고_삭제된_카테고리를_제외한다() {
         when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 3));
         LocalDate date = LocalDate.of(2026, 10, 2);
         var start = java.time.LocalDateTime.of(2026, 10, 1, 15, 0);
@@ -60,9 +60,9 @@ class CategoryServiceTest {
         when(categoryRepository.findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1)))
                 .thenReturn(List.of(active, deleted));
         var result = categoryService.getDailyCategories(date);
-        assertEquals(2, result.size());
+        assertEquals(1, result.size());
         assertFalse(result.get(0).isDeleted());
-        assertTrue(result.get(1).isDeleted());
+        assertEquals("운동", result.get(0).name());
         verify(categoryRepository).findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1));
     }
 

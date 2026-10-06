@@ -71,7 +71,8 @@ public class CategoryService {
         }
         return categoryRepository.findActiveCategoriesByOwnerAt(currentOwner.id(),
                         ApplicationTime.startOfDayUtc(date), ApplicationTime.startOfDayUtc(date.plusDays(1)))
-                .stream().map(DailyCategoryResponse::from).toList();
+                .stream().filter(category -> category.getDeletedAt() == null)
+                .map(DailyCategoryResponse::from).toList();
     }
 
     @Transactional

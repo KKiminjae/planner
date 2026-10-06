@@ -5,7 +5,7 @@ export function seoulToday(now = new Date()): string {
 }
 
 export function monthGrid(year: number, month: number): (number | null)[] {
-  const start = new Date(Date.UTC(year, month - 1, 1)).getUTCDay();
+  const start = (new Date(Date.UTC(year, month - 1, 1)).getUTCDay() + 6) % 7;
   const days = daysInMonth(year, month);
   const cells: (number | null)[] = Array(start).fill(null);
   for (let day = 1; day <= days; day++) cells.push(day);

@@ -110,3 +110,28 @@ test('session expiry while saving returns to login', async ({ page }) => {
   await page.getByRole('button', { name: '저장', exact: true }).click();
   await expect(page.getByText('세션이 만료됐어요. 다시 로그인해 주세요.')).toBeVisible();
 });
+
+test('create and edit a record with an empty memo', async ({ page }) => {
+  const state = await setup(page);
+  await page.goto('/#/categories/1/new?date=2026-10-02');
+  await page.getByLabel('기록 시간', { exact: true }).fill('08:30');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '상세 기록' })).toBeVisible();
+  expect(state.writes[0].body.memo).toBe('');
+  await page.getByRole('button', { name: '기록 메뉴' }).click();
+  await page.getByRole('link', { name: '수정', exact: true }).click();
+  await expect(page.getByLabel('메모', { exact: true })).toHaveValue('');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '상세 기록' })).toBeVisible();
+  expect(state.writes.at(-1)?.body.memo).toBe('');
+});
+
+test('create a record for a past date', async ({ page }) => {
+  const state = await setup(page);
+  await page.goto('/#/categories/1/new?date=2025-02-01');
+  await expect(page.getByRole('heading', { name: '기록 작성' })).toBeVisible();
+  await page.getByLabel('기록 시간', { exact: true }).fill('12:00');
+  await page.getByRole('button', { name: '저장', exact: true }).click();
+  await expect(page.getByRole('heading', { name: '상세 기록' })).toBeVisible();
+  expect(state.writes[0].body.recordDate).toBe('2025-02-01');
+});

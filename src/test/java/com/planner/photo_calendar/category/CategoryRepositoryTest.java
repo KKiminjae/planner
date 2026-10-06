@@ -84,6 +84,30 @@ class CategoryRepositoryTest extends MySqlIntegrationTest {
         assertThat(categories).hasSize((int) repository.countActiveCategoriesByOwnerAt(1L, start, next));
     }
 
+    @Test
+    void 소급_기록과_삭제후_완료이력은_과거날짜의_목록과_분모에_포함된다() {
+        LocalDate date = LocalDate.of(2025, 2, 1);
+        LocalDateTime start = com.planner.photo_calendar.common.time.ApplicationTime.startOfDayUtc(date);
+        Category category = repository.saveAndFlush(new Category(1L, "소급 기록", "#123456", 1, false));
+        var record = new com.planner.photo_calendar.record.DailyRecord(category, date, java.time.LocalTime.NOON, "", null);
+        entityManager.persist(record);
+        entityManager.flush();
+        assertThat(repository.findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1)))
+                .extracting(Category::getId).containsExactly(category.getId());
+        assertThat(repository.countActiveCategoriesByOwnerAt(1L, start, start.plusDays(1))).isEqualTo(1);
+        assertThat(repository.countActiveCategoriesByOwnerAt(2L, start, start.plusDays(1))).isZero();
+        entityManager.remove(record);
+        entityManager.persist(new com.planner.photo_calendar.completionhistory.CompletionHistory(category,
+                new com.planner.photo_calendar.completionhistory.CompletionHistoryId(category.getId(), date)));
+        category.delete();
+        entityManager.flush();
+        assertThat(repository.findActiveCategoriesByOwnerAt(1L, start, start.plusDays(1)))
+                .extracting(Category::getId).containsExactly(category.getId());
+        assertThat(repository.countActiveCategoriesByOwnerAt(1L, start, start.plusDays(1))).isEqualTo(1);
+        LocalDateTime emptyDay = start.minusDays(1);
+        assertThat(repository.countActiveCategoriesByOwnerAt(1L, emptyDay, start)).isZero();
+    }
+
     private Category save(String name, int order) {
         return repository.saveAndFlush(new Category(name, "#FF0000", order, false));
     }

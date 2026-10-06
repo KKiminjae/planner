@@ -2,7 +2,7 @@ import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from
 import { api, ApiError, type Category, type MonthlyRecord } from './api';
 import { categoryColor, daysInMonth, monthGrid, seoulToday } from './calendar';
 
-const weekdays = ['일', '월', '화', '수', '목', '금', '토'];
+const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 function Photo({ record, onExpired }: { record: MonthlyRecord; onExpired: () => void }) {
   const [url, setUrl] = useState('');
   useEffect(() => {

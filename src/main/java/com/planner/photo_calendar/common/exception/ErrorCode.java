@@ -15,7 +15,7 @@ public enum ErrorCode {
     PHOTO_NOT_FOUND(404, "업로드된 사진을 찾을 수 없습니다."),
     PHOTO_ALREADY_LINKED(409, "이미 다른 기록에 연결된 사진입니다."),
     INVALID_IMAGE(400, "JPEG 또는 PNG 이미지 파일을 업로드해 주세요."),
-    IMAGE_TOO_LARGE(413, "사진은 5MB 이하, 2천만 화소 이하로 업로드해 주세요."),
+    IMAGE_TOO_LARGE(413, "사진은 20MB 이하, 5천만 화소 이하로 업로드해 주세요."),
     IMAGE_STORAGE_UNAVAILABLE(503, "사진 저장소에 연결할 수 없습니다."),
     INTERNAL_SERVER_ERROR(500, "서버 오류가 발생했습니다.");
     private final int status;

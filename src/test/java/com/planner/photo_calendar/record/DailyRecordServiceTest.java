@@ -31,24 +31,12 @@ class DailyRecordServiceTest {
         when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 2));
         Category category = mock(Category.class);
         when(category.getId()).thenReturn(1L);
-        when(category.getCreatedAt()).thenReturn(java.time.LocalDateTime.of(2026, 10, 1, 14, 0));
         when(categoryRepository.findActiveOwnedByIdForUpdate(1L, 1L)).thenReturn(Optional.of(category));
         when(dailyRecordRepository.save(any(DailyRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
         DailyRecordResponse response = dailyRecordService.create(new DailyRecordCreateRequest(
                 1L, LocalDate.of(2026, 10, 2), LocalTime.of(0, 30), "자정 기록"));
         assertEquals(LocalDate.of(2026, 10, 2), response.recordDate());
         assertEquals(LocalTime.of(0, 30), response.recordTime());
-    }
-
-    @Test
-    void 한국시간_자정_이후_만든_카테고리는_UTC상_같은날인_어제기록을_거부한다() {
-        Category category = mock(Category.class);
-        when(category.getCreatedAt()).thenReturn(java.time.LocalDateTime.of(2026, 10, 1, 15, 1));
-        when(categoryRepository.findActiveOwnedByIdForUpdate(1L, 1L)).thenReturn(Optional.of(category));
-        BusinessException error = assertThrows(BusinessException.class, () -> dailyRecordService.create(
-                new DailyRecordCreateRequest(1L, LocalDate.of(2026, 10, 1), LocalTime.NOON, "이전 날짜")));
-        assertEquals("카테고리 생성일 이전에는 기록할 수 없습니다.", error.getMessage());
-        verify(dailyRecordRepository, never()).save(any());
     }
 
     @Mock
@@ -89,8 +77,6 @@ class DailyRecordServiceTest {
         when(category.getId())
                 .thenReturn(categoryId);
 
-        when(category.getCreatedAt())
-                .thenReturn(recordDate.minusDays(10).atStartOfDay());
 
         when(dailyRecordRepository.existsByCategoryIdAndRecordDate(
                 categoryId,
@@ -119,40 +105,19 @@ class DailyRecordServiceTest {
     }
 
     @Test
-    void 카테고리_생성일_이전날짜_생성x(){
-
-        Long categoryId = 1L;
-
-        LocalDate recordDate = LocalDate.of(2026, 9, 10);
-        LocalDate createdDate = LocalDate.of(2026, 9, 15);
-
-        Category category = mock(Category.class);
-
-        when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
-                .thenReturn(Optional.of(category));
-
-        when(category.getCreatedAt())
-                .thenReturn(createdDate.atStartOfDay());
-
-        DailyRecordCreateRequest request = new DailyRecordCreateRequest(
-                categoryId,
-                recordDate,
-                LocalTime.of(12, 0),
-                "테스트 기록");
-
-        BusinessException exception = assertThrows(BusinessException.class,
-                () -> dailyRecordService.create(request));
-
-        assertEquals(
-                "카테고리 생성일 이전에는 기록할 수 없습니다.",
-                exception.getMessage()
-        );
-
-        verify(dailyRecordRepository, never())
-                .existsByCategoryIdAndRecordDate(anyLong(), any());
-
-        verify(dailyRecordRepository, never())
-                .save(any(DailyRecord.class));
+    void 카테고리_생성일_이전날짜에도_기록할_수_있다() {
+        Category category = new Category(1L, "과거 기록", "#123456", 1, false);
+        org.springframework.test.util.ReflectionTestUtils.setField(category, "id", 1L);
+        org.springframework.test.util.ReflectionTestUtils.setField(category, "createdAt",
+                java.time.LocalDateTime.of(2026, 9, 15, 0, 0));
+        when(applicationTime.today()).thenReturn(LocalDate.of(2026, 10, 2));
+        when(categoryRepository.findActiveOwnedByIdForUpdate(1L, 1L)).thenReturn(Optional.of(category));
+        when(dailyRecordRepository.save(any(DailyRecord.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        var response = dailyRecordService.create(new DailyRecordCreateRequest(
+                1L, LocalDate.of(2025, 2, 1), LocalTime.NOON, ""));
+        assertEquals(LocalDate.of(2025, 2, 1), response.recordDate());
+        assertEquals("", response.memo());
+        verify(dailyRecordRepository).save(any(DailyRecord.class));
     }
 
     @Test
@@ -165,8 +130,6 @@ class DailyRecordServiceTest {
         when(categoryRepository.findActiveOwnedByIdForUpdate(categoryId, 1L))
                 .thenReturn(Optional.of(category));
 
-        when(category.getCreatedAt())
-                .thenReturn(recordDate.atStartOfDay());
 
         DailyRecordCreateRequest request = new DailyRecordCreateRequest(
                 categoryId,
@@ -206,8 +169,6 @@ class DailyRecordServiceTest {
                 recordDate
         )).thenReturn(false);
 
-        when(category.getCreatedAt())
-                .thenReturn(recordDate.minusDays(10).atStartOfDay());
 
         when(category.getId())
                 .thenReturn(categoryId);

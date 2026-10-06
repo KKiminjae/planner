@@ -38,7 +38,7 @@ class PhotoControllerTest {
 
     @Test
     void 업로드_용량_제한_오류는_413과_공통_오류를_반환한다() throws Exception {
-        when(service.upload(any())).thenThrow(new MaxUploadSizeExceededException(5 * 1024 * 1024));
+        when(service.upload(any())).thenThrow(new MaxUploadSizeExceededException(20 * 1024 * 1024));
         mvc.perform(multipart("/api/photos").file(new MockMultipartFile("file", new byte[]{1})))
                 .andExpect(status().is(413))
                 .andExpect(jsonPath("$.code").value("IMAGE_TOO_LARGE"));

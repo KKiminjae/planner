@@ -46,7 +46,7 @@ function IntegratedMonth({ year, month, today, onExpired, onChoose }: { year: nu
   const byDate = new Map(data?.map(day => [day.date, day]));
   return <section ref={element} id={`integrated-${year}-${month}`} className="integrated-month" aria-label={`${year}년 ${month}월 통합 기록`}>
     <h2><button className="month-title" onClick={onChoose}>{year}년 {month}월</button></h2>
-    <div className="full-weekdays" aria-hidden="true">{['일','월','화','수','목','금','토'].map(day => <span key={day}>{day}</span>)}</div>
+    <div className="full-weekdays" aria-hidden="true">{['월','화','수','목','금','토','일'].map(day => <span key={day}>{day}</span>)}</div>
     {error && <div className="month-error"><p role="alert">월간 기록을 불러오지 못했어요.</p><button className="primary" onClick={() => setAttempt(v => v+1)}>다시 시도</button></div>}
     {!data && !error && <p className="sr-only" role="status">{year}년 {month}월 기록을 불러오는 중이에요.</p>}
     <div className="integrated-grid">{monthGrid(year,month).map((day,i) => {
@@ -106,7 +106,7 @@ export function DailyCollection({ date, feed, onExpired }: { date: string; feed:
     Promise.all([api.dailyRecords(date), api.dailyCategories(date)]).then(([data, items]) => {
       if (!active) return;
       setRecords([...data].sort((a,b) => a.recordTime.localeCompare(b.recordTime) || a.id-b.id));
-      setCategories([...items].sort((a,b) => a.displayOrder-b.displayOrder || a.id-b.id));
+      setCategories(items.filter(item => !item.isDeleted).sort((a,b) => a.displayOrder-b.displayOrder || a.id-b.id));
     }).catch(cause => {
       if (!active) return;
       if (cause instanceof ApiError && cause.status === 401) onExpired(); else setError('이날의 카테고리와 기록을 불러오지 못했어요.');
@@ -129,8 +129,8 @@ export function DailyCollection({ date, feed, onExpired }: { date: string; feed:
       const record = records.find(item => item.categoryId === category.id);
       const style = {'--category':categoryColor(category.color)} as CSSProperties;
       if (!record) {
-        const content = <><h2>{category.name}</h2><div className="daily-record-image empty"><span className="empty-record-symbol" aria-hidden="true">{category.isDeleted ? '—' : '+'}</span><span className="empty-record-label">{category.isDeleted ? '삭제된 카테고리' : '기록 없음'}</span></div></>;
-        return category.isDeleted ? <div className="daily-record-card" key={category.id} style={style} aria-label={`${category.name}, 삭제된 카테고리`}>{content}</div> : <a className="daily-record-card" key={category.id} style={style} href={`#/categories/${category.id}/new?date=${date}&from=${encodeURIComponent(`/daily/${date}`)}`} aria-label={`${category.name}, 기록 없음, 기록 작성`}>{content}</a>;
+        const content = <><h2>{category.name}</h2><div className="daily-record-image empty"><span className="empty-record-symbol" aria-hidden="true">+</span><span className="empty-record-label">기록 없음</span></div></>;
+        return <a className="daily-record-card" key={category.id} style={style} href={`#/categories/${category.id}/new?date=${date}&from=${encodeURIComponent(`/daily/${date}`)}`} aria-label={`${category.name}, 기록 없음, 기록 작성`}>{content}</a>;
       }
       return <a className="daily-record-card" key={category.id} href={`#/records/${record.id}?from=${encodeURIComponent(`/daily/${date}`)}`} style={style} aria-label={`${category.name}, ${record.recordTime.slice(0,5)} 기록 보기`}><h2>{category.name}</h2><div className={`daily-record-image ${record.imageKey ? 'has-photo' : ''}`}>{record.imageKey && <RecordPhoto record={record} onExpired={onExpired} grid={true}/>}<time>{record.recordTime.slice(0,5)}</time></div></a>;
     })}</div>}
